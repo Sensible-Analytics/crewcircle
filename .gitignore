@@ -70,13 +70,10 @@ Pods/
 .sisyphus/
 .superset/
 AGENTS.md
-App.tsx
 Gemfile
 Gemfile.lock
-__tests__/
 docs/
 fastlane/
-index.js
 scripts/
 setup-and-verify.sh
 tests/

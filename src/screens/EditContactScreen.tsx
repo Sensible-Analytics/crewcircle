@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
   StyleSheet,
   Alert,
   TextInput,
   ScrollView,
-  KeyboardAvoidingView
-} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import storageUtils from '../utils/storage';
-import { showErrorAlert } from '../utils/errorHandler';
+  KeyboardAvoidingView,
+} from "react-native";
+import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import storageUtils from "../utils/storage";
+import { showErrorAlert } from "../utils/errorHandler";
 
 type Contact = {
   id: string;
@@ -24,24 +24,16 @@ type Contact = {
   scannedAt: string;
 };
 
-type RouteParams = {
-  contactId: string;
-};
-
 const EditContactScreen = ({ route, navigation }: any) => {
   const { contactId } = route.params;
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [name, setName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [company, setCompany] = useState<string>('');
-  const [address, setAddress] = useState<string>('');
-  const [website, setWebsite] = useState<string>('');
-
-  useEffect(() => {
-    loadContact();
-  }, [contactId]);
+  const [name, setName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+  const [company, setCompany] = useState<string>("");
+  const [address, setAddress] = useState<string>("");
+  const [website, setWebsite] = useState<string>("");
 
   const loadContact = useCallback(async () => {
     setLoading(true);
@@ -50,27 +42,31 @@ const EditContactScreen = ({ route, navigation }: any) => {
       const foundContact = contacts.find((c: any) => c.id === contactId);
       if (foundContact) {
         setContact(foundContact);
-        setName(foundContact.name || '');
-        setEmail(foundContact.email || '');
-        setPhone(foundContact.phone || '');
-        setCompany(foundContact.company || '');
-        setAddress(foundContact.address || '');
-        setWebsite(foundContact.website || '');
+        setName(foundContact.name || "");
+        setEmail(foundContact.email || "");
+        setPhone(foundContact.phone || "");
+        setCompany(foundContact.company || "");
+        setAddress(foundContact.address || "");
+        setWebsite(foundContact.website || "");
       } else {
-        Alert.alert('Error', 'Contact not found');
+        Alert.alert("Error", "Contact not found");
         navigation.goBack();
       }
     } catch (error) {
-      console.warn('Failed to load contact:', error);
-      showErrorAlert(error, 'Load contact');
+      console.warn("Failed to load contact:", error);
+      showErrorAlert(error, "Load contact");
     } finally {
       setLoading(false);
     }
-  }, [contactId]);
+  }, [contactId, navigation]);
+
+  useEffect(() => {
+    loadContact();
+  }, [loadContact]);
 
   const handleSaveContact = useCallback(async () => {
     if (!name.trim()) {
-      Alert.alert('Error', 'Name is required');
+      Alert.alert("Error", "Name is required");
       return;
     }
 
@@ -86,35 +82,35 @@ const EditContactScreen = ({ route, navigation }: any) => {
         scannedAt: new Date().toISOString(),
       };
 
-       await storageUtils.updateContact(contactId, updatedContact);
-       Alert.alert('Success', 'Contact updated successfully!');
-       navigation.goBack();
+      await storageUtils.updateContact(contactId, updatedContact);
+      Alert.alert("Success", "Contact updated successfully!");
+      navigation.goBack();
     } catch (error) {
-      console.warn('Failed to save contact:', error);
-      showErrorAlert(error, 'Save contact');
+      console.warn("Failed to save contact:", error);
+      showErrorAlert(error, "Save contact");
     }
-  }, [contactId, name, email, phone, company, address, website]);
+  }, [contactId, name, email, phone, company, address, website, navigation]);
 
   const handleDeleteContact = useCallback(() => {
     Alert.alert(
-      'Delete Contact',
-      'Are you sure you want to delete this contact? This action cannot be undone.',
+      "Delete Contact",
+      "Are you sure you want to delete this contact? This action cannot be undone.",
       [
         {
-          text: 'Cancel',
-          style: 'cancel',
+          text: "Cancel",
+          style: "cancel",
         },
         {
-           text: 'Delete',
-           style: 'destructive',
-           onPress: async () => {
-             await storageUtils.deleteContact(contactId);
-             navigation.goBack();
-           },
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await storageUtils.deleteContact(contactId);
+            navigation.goBack();
+          },
         },
       ]
     );
-  }, [contactId]);
+  }, [contactId, navigation]);
 
   if (loading || !contact) {
     return (
@@ -129,14 +125,20 @@ const EditContactScreen = ({ route, navigation }: any) => {
   return (
     <KeyboardAvoidingView behavior="padding" style={Styles.container}>
       <View style={Styles.header}>
-        <TouchableOpacity style={Styles.backButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={Styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={Styles.headerTitle}>Edit Contact</Text>
-        <View style={{ width: 24 }} /> // Spacer for back button
+        <View style={{ width: 24 }} />
       </View>
-      
-      <ScrollView contentContainerStyle={Styles.formContainer} keyboardShouldPersistTaps="handled">
+
+      <ScrollView
+        contentContainerStyle={Styles.formContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={Styles.inputGroup}>
           <Text style={Styles.inputLabel}>Name</Text>
           <TextInput
@@ -147,7 +149,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
             autoFocus
           />
         </View>
-        
+
         <View style={Styles.inputGroup}>
           <Text style={Styles.inputLabel}>Email</Text>
           <TextInput
@@ -158,7 +160,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
             keyboardType="email-address"
           />
         </View>
-        
+
         <View style={Styles.inputGroup}>
           <Text style={Styles.inputLabel}>Phone</Text>
           <TextInput
@@ -169,7 +171,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
             keyboardType="phone-pad"
           />
         </View>
-        
+
         <View style={Styles.inputGroup}>
           <Text style={Styles.inputLabel}>Company</Text>
           <TextInput
@@ -179,7 +181,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
             placeholder="Enter company"
           />
         </View>
-        
+
         <View style={Styles.inputGroup}>
           <Text style={Styles.inputLabel}>Address (Optional)</Text>
           <TextInput
@@ -189,7 +191,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
             placeholder="Enter address"
           />
         </View>
-        
+
         <View style={Styles.inputGroup}>
           <Text style={Styles.inputLabel}>Website (Optional)</Text>
           <TextInput
@@ -199,14 +201,21 @@ const EditContactScreen = ({ route, navigation }: any) => {
             placeholder="Enter website"
           />
         </View>
-        
+
         <View style={Styles.buttonContainer}>
           <TouchableOpacity style={Styles.button} onPress={handleSaveContact}>
-            <MaterialCommunityIcons name="content-save" size={20} color="#fff" />
+            <MaterialCommunityIcons
+              name="content-save"
+              size={20}
+              color="#fff"
+            />
             <Text style={Styles.buttonText}>Save Changes</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity style={Styles.buttonDelete} onPress={handleDeleteContact}>
+
+          <TouchableOpacity
+            style={Styles.buttonDelete}
+            onPress={handleDeleteContact}
+          >
             <MaterialCommunityIcons name="delete" size={20} color="#fff" />
             <Text style={Styles.buttonText}>Delete Contact</Text>
           </TouchableOpacity>
@@ -221,33 +230,33 @@ export default EditContactScreen;
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: 16,
-    backgroundColor: '#0066cc',
+    backgroundColor: "#0066cc",
     borderBottomWidth: 1,
-    borderColor: '#eee',
+    borderColor: "#eee",
   },
   backButton: {
     padding: 8,
   },
   headerTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     fontSize: 18,
-    color: '#666',
+    color: "#666",
   },
   formContainer: {
     padding: 16,
@@ -257,40 +266,40 @@ const Styles = StyleSheet.create({
   },
   inputLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "600",
+    color: "#333",
     marginBottom: 8,
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: "#ddd",
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 16,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginTop: 24,
     padding: 16,
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
     paddingHorizontal: 20,
-    backgroundColor: '#0066cc',
+    backgroundColor: "#0066cc",
     borderRadius: 8,
   },
   buttonDelete: {
-    backgroundColor: '#ff4444',
+    backgroundColor: "#ff4444",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 8,
   },
 });

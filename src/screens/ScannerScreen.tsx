@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
-  Platform,
 } from "react-native";
 import { Camera } from "react-native-vision-camera";
 import MlkitOcr from "rn-mlkit-ocr";
@@ -60,7 +59,9 @@ const ScannerScreen = () => {
 
   // Handle capturing image
   const handleCapture = useCallback(async () => {
-    if (!cameraRef.current) return;
+    if (!cameraRef.current) {
+      return;
+    }
 
     try {
       setIsProcessing(true);
@@ -91,12 +92,16 @@ const ScannerScreen = () => {
     const emailMatch = text.match(
       /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
     );
-    if (emailMatch) info.email = emailMatch[0];
+    if (emailMatch) {
+      info.email = emailMatch[0];
+    }
 
     const phoneMatch = text.match(
       /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/
     );
-    if (phoneMatch) info.phone = phoneMatch[0];
+    if (phoneMatch) {
+      info.phone = phoneMatch[0];
+    }
 
     // Try to find company name (look for common suffixes)
     const companyMatch = text.match(
@@ -106,7 +111,9 @@ const ScannerScreen = () => {
       // Extract a line containing the company match
       const lines = text.split("\n");
       const companyLine = lines.find((line) => line.includes(companyMatch[0]));
-      if (companyLine) info.company = companyLine.trim();
+      if (companyLine) {
+        info.company = companyLine.trim();
+      }
     }
 
     // Assume the first line might be a name (if it's short and doesn't contain @ or numbers)
@@ -126,7 +133,9 @@ const ScannerScreen = () => {
     const websiteMatch = text.match(
       /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
     );
-    if (websiteMatch) info.website = websiteMatch[0];
+    if (websiteMatch) {
+      info.website = websiteMatch[0];
+    }
 
     return info;
   };
