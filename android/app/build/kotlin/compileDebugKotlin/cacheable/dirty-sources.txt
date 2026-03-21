@@ -1,0 +1,2 @@
+/Users/prabhatranjan/Business/cardScanner/business-card-scanner/CardScannerApp/android/app/src/main/java/com/cardscannerapp/MainApplication.kt
+/Users/prabhatranjan/Business/cardScanner/business-card-scanner/CardScannerApp/android/app/src/main/java/com/cardscannerapp/MainActivity.kt
