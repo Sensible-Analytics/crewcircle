@@ -23,6 +23,8 @@ type Contact = {
   scannedAt: string;
 };
 
+const Separator = () => <View style={Styles.separator} />;
+
 const ContactsScreen = () => {
   const navigation = useNavigation();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -163,7 +165,7 @@ const ContactsScreen = () => {
         data={contacts}
         keyExtractor={(item) => item.id}
         renderItem={renderContact}
-        ItemSeparatorComponent={() => <View style={Styles.separator} />}
+        ItemSeparatorComponent={Separator}
         contentContainerStyle={Styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />

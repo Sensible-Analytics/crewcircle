@@ -7,50 +7,48 @@ import SettingsScreen from "../screens/SettingsScreen";
 
 const Tab = createBottomTabNavigator();
 
+const ScanIcon = ({ color, size }: { color: string; size: number }) => (
+  <MaterialCommunityIcons name="scan-helper" color={color} size={size} />
+);
+
+const ContactsIcon = ({ color, size }: { color: string; size: number }) => (
+  <MaterialCommunityIcons name="account-multiple" color={color} size={size} />
+);
+
+const SettingsIcon = ({ color, size }: { color: string; size: number }) => (
+  <MaterialCommunityIcons name="cog" color={color} size={size} />
+);
+
 export const AppNavigator = () => {
   return (
     <Tab.Navigator
-      screenOptions={() => ({
+      screenOptions={{
         tabBarActiveTintColor: "#0066cc",
         tabBarInactiveTintColor: "#666666",
-      })}
+      }}
     >
       <Tab.Screen
         name="Scan"
-        component={() => <ScannerScreen />}
+        component={ScannerScreen}
         options={{
           tabBarLabel: "Scan",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="scan-helper"
-              color={color}
-              size={size}
-            />
-          ),
+          tabBarIcon: ScanIcon,
         }}
       />
       <Tab.Screen
         name="Contacts"
-        component={() => <ContactsScreen />}
+        component={ContactsScreen}
         options={{
           tabBarLabel: "Contacts",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="account-multiple"
-              color={color}
-              size={size}
-            />
-          ),
+          tabBarIcon: ContactsIcon,
         }}
       />
       <Tab.Screen
         name="Settings"
-        component={() => <SettingsScreen />}
+        component={SettingsScreen}
         options={{
           tabBarLabel: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="cog" color={color} size={size} />
-          ),
+          tabBarIcon: SettingsIcon,
         }}
       />
     </Tab.Navigator>
