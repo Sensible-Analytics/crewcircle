@@ -82,3 +82,50 @@ npm run android
 - The application requires camera access to function
 - Contact data is stored locally on your device and is not shared with any external services
 - For optimal OCR results, ensure good lighting and a clear, well-focused image of the business card
+
+## Testing Strategy
+
+This application implements a comprehensive testing strategy to ensure quality and reliability:
+
+### Unit Testing
+
+- Jest is used for unit and integration testing
+- Test coverage is enforced at >90% for all source files
+- Tests cover:
+  - Core components: ScannerScreen, ContactsScreen, EditContactScreen, SettingsScreen
+  - Utility functions: exportUtils, errorHandler, storage, contactParser
+  - Mocking of external dependencies (camera, OCR, storage, navigation)
+
+### End-to-End Testing
+
+- Detox is used for end-to-end testing on both iOS and Android
+- Critical user flows tested:
+  1. Scan business card → Save contact → View in contacts list
+  2. Contact management: Add contact → Edit contact → Delete contact
+  3. Settings persistence: Verify OCR languages, auto-save, notifications, and data usage settings persist across app restarts
+- Test IDs have been added to all key UI elements for reliable test selection
+
+### Continuous Integration
+
+- GitHub Actions workflows run tests on every push and pull request
+- Android and iOS builds are configured to:
+  - Run linting with zero warnings tolerance
+  - Execute all unit tests and enforce coverage thresholds
+  - Build platform-specific artifacts (APK for Android, .app for iOS)
+  - Fail builds on test failures or coverage violations
+
+To run tests locally:
+
+```bash
+# Run unit tests
+npm test
+
+# Run tests in CI mode (single run)
+npm run test:ci
+
+# Run end-to-end tests on iOS simulator
+npm run detox:test
+
+# Run end-to-end tests on Android emulator
+npm run detox:test:android
+```
