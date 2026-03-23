@@ -1,7 +1,7 @@
 module.exports = {
   preset: "react-native",
   setupFiles: ["<rootDir>/jest.setup.js"],
-  setupFilesAfterEnv: ["@testing-library/jest-native/extend-expect"],
+  setupFilesAfterEnv: [],
   transformIgnorePatterns: [
     "node_modules/(?!(react-native|@react-native|react-native-vector-icons|rn-mlkit-ocr)/)",
   ],
