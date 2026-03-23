@@ -6,14 +6,10 @@ import ScannerScreen from "../screens/ScannerScreen";
 import ContactsScreen from "../screens/ContactsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import EditContactScreen from "../screens/EditContactScreen";
+import { ContactsStackParamList, RootTabParamList } from "./types";
 
-const Tab = createBottomTabNavigator();
-
-// Define the parameter list for our contact stack navigator
-type ContactStackParamList = {
-  ContactsList: undefined;
-  EditContact: { contactId: string };
-};
+const Tab = createBottomTabNavigator<RootTabParamList>();
+const ContactsStack = createNativeStackNavigator<ContactsStackParamList>();
 
 const ScanIcon = ({ color, size }: { color: string; size: number }) => (
   <MaterialCommunityIcons name="scan-helper" color={color} size={size} />
@@ -26,6 +22,15 @@ const ContactsIcon = ({ color, size }: { color: string; size: number }) => (
 const SettingsIcon = ({ color, size }: { color: string; size: number }) => (
   <MaterialCommunityIcons name="cog" color={color} size={size} />
 );
+
+const ContactsStackNavigator = () => {
+  return (
+    <ContactsStack.Navigator screenOptions={{ headerShown: false }}>
+      <ContactsStack.Screen name="ContactsList" component={ContactsScreen} />
+      <ContactsStack.Screen name="EditContact" component={EditContactScreen} />
+    </ContactsStack.Navigator>
+  );
+};
 
 export const AppNavigator = () => {
   return (
@@ -45,23 +50,7 @@ export const AppNavigator = () => {
       />
       <Tab.Screen
         name="Contacts"
-        component={() => {
-          const ContactsStack =
-            createNativeStackNavigator<ContactStackParamList>();
-
-          return (
-            <ContactsStack.Navigator screenOptions={{ headerShown: false }}>
-              <ContactsStack.Screen
-                name="ContactsList"
-                component={ContactsScreen}
-              />
-              <ContactsStack.Screen
-                name="EditContact"
-                component={EditContactScreen}
-              />
-            </ContactsStack.Navigator>
-          );
-        }}
+        component={ContactsStackNavigator}
         options={{
           tabBarLabel: "Contacts",
           tabBarIcon: ContactsIcon,

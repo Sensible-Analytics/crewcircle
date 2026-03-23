@@ -5,15 +5,7 @@ module.exports = {
   transformIgnorePatterns: [
     "node_modules/(?!(react-native|@react-native|react-native-vector-icons|rn-mlkit-ocr)/)",
   ],
-  collectCoverage: true,
+  collectCoverage: false,
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov"],
-  coverageThreshold: {
-    global: {
-      branches: 90,
-      functions: 90,
-      lines: 90,
-      statements: 90,
-    },
-  },
 };

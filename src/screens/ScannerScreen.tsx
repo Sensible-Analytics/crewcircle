@@ -1,55 +1,112 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   Image,
   StyleSheet,
-  Alert,
-  ActivityIndicator,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { Camera } from "react-native-vision-camera";
-import MlkitOcr from "rn-mlkit-ocr";
+import { useFocusEffect } from "@react-navigation/native";
+import MlkitOcr, { DetectorType } from "rn-mlkit-ocr";
+import {
+  Camera,
+  CameraPermissionStatus,
+  useCameraDevice,
+} from "react-native-vision-camera";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import storageUtils from "../utils/storage";
-import { exportContactAsVCard } from "../utils/exportUtils";
+import { Contact, createContact, hasContactDetails } from "../types/contact";
+import { DEFAULT_APP_SETTINGS } from "../types/settings";
 import { showErrorAlert } from "../utils/errorHandler";
+import { exportContactAsVCard } from "../utils/exportUtils";
+import { parseContactInfo } from "../utils/contactParser";
+import storageUtils from "../utils/storage";
 
-// Types
-type ContactInfo = {
-  name?: string;
-  email?: string;
-  phone?: string;
-  company?: string;
-  address?: string;
-  website?: string;
+const OCR_LANGUAGE_LABELS: Record<string, string> = {
+  chi_sim: "Chinese",
+  deu: "German",
+  eng: "English",
+  fra: "French",
+  ita: "Italian",
+  jap: "Japanese",
+  kor: "Korean",
+  por: "Portuguese",
+  rus: "Russian",
+  spa: "Spanish",
+};
+
+const resolveDetectorType = (languages: string[]): DetectorType => {
+  if (languages.includes("chi_sim")) {
+    return "chinese";
+  }
+
+  if (languages.includes("jap")) {
+    return "japanese";
+  }
+
+  if (languages.includes("kor")) {
+    return "korean";
+  }
+
+  return "latin";
+};
+
+const formatLanguageSummary = (languages: string[]): string => {
+  if (languages.length === 0) {
+    return "English";
+  }
+
+  return languages
+    .map((language) => OCR_LANGUAGE_LABELS[language] ?? language)
+    .join(", ");
 };
 
 const ScannerScreen = () => {
-  const cameraRef = useRef<any>(null);
+  const cameraRef = useRef<Camera>(null);
+  const device = useCameraDevice("back");
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [extractedText, setExtractedText] = useState<string>("");
-  const [contactInfo, setContactInfo] = useState<ContactInfo>({});
+  const [extractedText, setExtractedText] = useState("");
+  const [currentContact, setCurrentContact] = useState<Contact | null>(null);
   const [showResults, setShowResults] = useState(false);
-  const [permissionStatus, setPermissionStatus] = useState<
-    "undetermined" | "denied" | "authorized" | "granted"
-  >("undetermined");
+  const [isCurrentContactSaved, setIsCurrentContactSaved] = useState(false);
+  const [permissionStatus, setPermissionStatus] =
+    useState<CameraPermissionStatus>("not-determined");
+  const [ocrLanguages, setOcrLanguages] = useState(
+    DEFAULT_APP_SETTINGS.ocrLanguages
+  );
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(
+    DEFAULT_APP_SETTINGS.autoSave
+  );
 
-  // Request camera permission
+  const resetScanState = useCallback(() => {
+    setShowResults(false);
+    setExtractedText("");
+    setCurrentContact(null);
+    setCapturedImage(null);
+    setIsCurrentContactSaved(false);
+  }, []);
+
+  const loadScannerSettings = useCallback(async () => {
+    try {
+      const [savedLanguages, autoSave] = await Promise.all([
+        storageUtils.getOcrLanguages(),
+        storageUtils.getAutoSaveEnabled(),
+      ]);
+
+      setOcrLanguages(savedLanguages);
+      setAutoSaveEnabled(autoSave);
+    } catch (error) {
+      console.warn("Failed to load scanner settings:", error);
+    }
+  }, []);
+
   const requestCameraPermission = useCallback(async () => {
     try {
       const status = await Camera.requestCameraPermission();
-      // CameraPermissionRequestResult type can be 'undetermined', 'denied', or 'authorized'
-      // but on Android it might return 'granted' instead of 'authorized'
       setPermissionStatus(status);
-      // Explicitly check for both possible values to satisfy TypeScript
-      // This comparison might appear unintentional to TypeScript but is necessary
-      // to handle both iOS ("authorized") and Android ("granted") permission results
-      const isAuthorized =
-        (status as unknown as string) === "authorized" ||
-        (status as unknown as string) === "granted";
-      return isAuthorized;
+      return status === "granted";
     } catch (error) {
       console.warn("Camera permission error:", error);
       setPermissionStatus("denied");
@@ -57,145 +114,96 @@ const ScannerScreen = () => {
     }
   }, []);
 
-  // Handle capturing image
+  const persistContact = useCallback(
+    async (contact: Contact, successMessage: string) => {
+      await storageUtils.addContact(contact);
+      setIsCurrentContactSaved(true);
+      Alert.alert("Success", successMessage);
+    },
+    []
+  );
+
+  useEffect(() => {
+    requestCameraPermission();
+  }, [requestCameraPermission]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadScannerSettings();
+    }, [loadScannerSettings])
+  );
+
   const handleCapture = useCallback(async () => {
-    if (!cameraRef.current) {
+    if (!cameraRef.current || !device) {
       return;
     }
 
     try {
       setIsProcessing(true);
-      const image = await cameraRef.current.takePicture();
-      setCapturedImage(image.uri);
 
-      // Process the image with OCR
-      const result = await MlkitOcr.recognizeText(image.uri);
-      const text = result.text;
+      const photo = await cameraRef.current.takePhoto({
+        enableShutterSound: false,
+      });
+      const imageUri = photo.path.startsWith("file://")
+        ? photo.path
+        : `file://${photo.path}`;
+      const detectorType = resolveDetectorType(ocrLanguages);
+      const result = await MlkitOcr.recognizeText(imageUri, detectorType);
+      const parsedInfo = parseContactInfo(result.text);
+      const nextContact = createContact(parsedInfo);
 
-      setExtractedText(text);
-      const parsedInfo = parseContactInfo(text);
-      setContactInfo(parsedInfo);
+      setCapturedImage(imageUri);
+      setExtractedText(result.text);
+      setCurrentContact(nextContact);
       setShowResults(true);
+      setIsCurrentContactSaved(false);
+
+      if (autoSaveEnabled && hasContactDetails(nextContact)) {
+        await persistContact(nextContact, "Contact auto-saved successfully!");
+      }
     } catch (error) {
       console.warn("Capture/OCR Error:", error);
       showErrorAlert(error, "OCR processing");
     } finally {
       setIsProcessing(false);
     }
-  }, [cameraRef]);
+  }, [autoSaveEnabled, device, ocrLanguages, persistContact]);
 
-  // Parse extracted text to find contact information
-  const parseContactInfo = (text: string): ContactInfo => {
-    const info: ContactInfo = {};
-
-    // Simple regex patterns for common contact info
-    const emailMatch = text.match(
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/
-    );
-    if (emailMatch) {
-      info.email = emailMatch[0];
-    }
-
-    const phoneMatch = text.match(
-      /(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/
-    );
-    if (phoneMatch) {
-      info.phone = phoneMatch[0];
-    }
-
-    // Try to find company name (look for common suffixes)
-    const companyMatch = text.match(
-      /(?:Inc|LLC|Ltd|Corp|Corporation|Company|Co\.)/i
-    );
-    if (companyMatch) {
-      // Extract a line containing the company match
-      const lines = text.split("\n");
-      const companyLine = lines.find((line) => line.includes(companyMatch[0]));
-      if (companyLine) {
-        info.company = companyLine.trim();
-      }
-    }
-
-    // Assume the first line might be a name (if it's short and doesn't contain @ or numbers)
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
-    if (lines.length > 0) {
-      const firstLine = lines[0].trim();
-      if (
-        firstLine.length < 50 &&
-        !firstLine.includes("@") &&
-        !/\d{3}/.test(firstLine)
-      ) {
-        info.name = firstLine;
-      }
-    }
-
-    // Look for website
-    const websiteMatch = text.match(
-      /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/
-    );
-    if (websiteMatch) {
-      info.website = websiteMatch[0];
-    }
-
-    return info;
-  };
-
-  // Handle saving contact
-  const handleSaveContact = async () => {
-    if (contactInfo.name || contactInfo.email || contactInfo.phone) {
-      const contact = {
-        name: contactInfo.name || "",
-        email: contactInfo.email || "",
-        phone: contactInfo.phone || "",
-        company: contactInfo.company || "",
-        address: contactInfo.address || "",
-        website: contactInfo.website || "",
-      };
-
-      await storageUtils.addContact(contact);
-      Alert.alert("Success", "Contact saved successfully!");
-      setShowResults(false);
-      setExtractedText("");
-      setContactInfo({});
-      setCapturedImage(null);
-    } else {
+  const handleSaveContact = useCallback(async () => {
+    if (!currentContact || !hasContactDetails(currentContact)) {
       Alert.alert("Error", "No contact information to save.");
+      return;
     }
-  };
 
-  // Handle exporting contact as VCard
-  const handleExportContact = async () => {
-    if (contactInfo.name || contactInfo.email || contactInfo.phone) {
-      const contact = {
-        name: contactInfo.name || "",
-        email: contactInfo.email || "",
-        phone: contactInfo.phone || "",
-        company: contactInfo.company || "",
-        address: contactInfo.address || "",
-        website: contactInfo.website || "",
-      };
+    if (isCurrentContactSaved) {
+      Alert.alert("Info", "This contact is already saved.");
+      return;
+    }
 
-      try {
-        await exportContactAsVCard(contact);
-        Alert.alert("Success", "Contact exported as VCard!");
-      } catch (error) {
-        console.warn("Export error:", error);
-        Alert.alert("Error", "Failed to export contact.");
-      }
-    } else {
+    try {
+      await persistContact(currentContact, "Contact saved successfully!");
+    } catch (error) {
+      console.warn("Save error:", error);
+      showErrorAlert(error, "Save contact");
+    }
+  }, [currentContact, isCurrentContactSaved, persistContact]);
+
+  const handleExportContact = useCallback(async () => {
+    if (!currentContact || !hasContactDetails(currentContact)) {
       Alert.alert("Error", "No contact information to export.");
+      return;
     }
-  };
 
-  // Retake photo
-  const handleRetake = () => {
-    setShowResults(false);
-    setExtractedText("");
-    setContactInfo({});
-    setCapturedImage(null);
-  };
+    try {
+      await exportContactAsVCard(currentContact);
+      Alert.alert("Success", "Contact exported as VCard!");
+    } catch (error) {
+      console.warn("Export error:", error);
+      showErrorAlert(error, "Export contact");
+    }
+  }, [currentContact]);
 
-  if (permissionStatus === "undetermined") {
+  if (permissionStatus === "not-determined") {
     return (
       <View style={Styles.container}>
         <Text style={Styles.permissionText}>
@@ -205,7 +213,7 @@ const ScannerScreen = () => {
     );
   }
 
-  if (permissionStatus === "denied") {
+  if (permissionStatus === "denied" || permissionStatus === "restricted") {
     return (
       <View style={Styles.container}>
         <Text style={Styles.permissionText}>
@@ -214,6 +222,7 @@ const ScannerScreen = () => {
         <TouchableOpacity
           style={Styles.button}
           onPress={requestCameraPermission}
+          testID="grant-permission-button"
         >
           <Text style={Styles.buttonText}>Grant Permission</Text>
         </TouchableOpacity>
@@ -221,21 +230,35 @@ const ScannerScreen = () => {
     );
   }
 
+  if (!device) {
+    return (
+      <View style={Styles.container}>
+        <Text style={Styles.permissionText}>Loading camera...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={Styles.container} testID="main-view">
       {!showResults ? (
-        // Camera view
-        <View style={{ flex: 1 }} testID="camera-view">
-          {/* @ts-ignore: Property 'device' is missing in type '{ ref: MutableRefObject<any>; style: AbsoluteFillStyle; isActive: true; }' but required in type 'Readonly<CameraProps>.' */}
+        <View style={Styles.cameraContainer} testID="camera-view">
           <Camera
             ref={cameraRef}
             style={StyleSheet.absoluteFillObject}
+            device={device}
             isActive={true}
+            photo={true}
           />
           <View style={Styles.overlay}>
             <MaterialCommunityIcons name="scan-helper" size={40} color="#fff" />
             <Text style={Styles.instructionText}>
               Point camera at business card and tap to capture
+            </Text>
+            <Text style={Styles.subInstructionText}>
+              OCR profile: {formatLanguageSummary(ocrLanguages)}
+            </Text>
+            <Text style={Styles.subInstructionText}>
+              Auto-save: {autoSaveEnabled ? "On" : "Off"}
             </Text>
           </View>
           <TouchableOpacity
@@ -252,9 +275,8 @@ const ScannerScreen = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        // Results view
         <View style={Styles.resultsContainer} testID="results-view">
-          {capturedImage !== null ? (
+          {capturedImage ? (
             <Image
               source={{ uri: capturedImage }}
               style={Styles.capturedImage}
@@ -266,37 +288,41 @@ const ScannerScreen = () => {
             {extractedText}
           </Text>
 
+          {isCurrentContactSaved ? (
+            <Text style={Styles.savedBanner}>Saved to contacts</Text>
+          ) : null}
+
           <View style={Styles.contactInfoContainer}>
             <Text style={Styles.contactInfoLabel}>Name:</Text>
             <Text style={Styles.contactInfoValue}>
-              {contactInfo.name || "Not detected"}
+              {currentContact?.name || "Not detected"}
             </Text>
 
             <Text style={Styles.contactInfoLabel}>Email:</Text>
             <Text style={Styles.contactInfoValue}>
-              {contactInfo.email || "Not detected"}
+              {currentContact?.email || "Not detected"}
             </Text>
 
             <Text style={Styles.contactInfoLabel}>Phone:</Text>
             <Text style={Styles.contactInfoValue}>
-              {contactInfo.phone || "Not detected"}
+              {currentContact?.phone || "Not detected"}
             </Text>
 
             <Text style={Styles.contactInfoLabel}>Company:</Text>
             <Text style={Styles.contactInfoValue}>
-              {contactInfo.company || "Not detected"}
+              {currentContact?.company || "Not detected"}
             </Text>
 
             <Text style={Styles.contactInfoLabel}>Website:</Text>
             <Text style={Styles.contactInfoValue}>
-              {contactInfo.website || "Not detected"}
+              {currentContact?.website || "Not detected"}
             </Text>
           </View>
 
           <View style={Styles.buttonContainer}>
             <TouchableOpacity
               style={Styles.button}
-              onPress={handleRetake}
+              onPress={resetScanState}
               testID="retake-button"
             >
               <MaterialCommunityIcons name="repeat" size={20} color="#fff" />
@@ -304,16 +330,22 @@ const ScannerScreen = () => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={Styles.button}
+              style={[
+                Styles.button,
+                isCurrentContactSaved ? Styles.buttonDisabled : undefined,
+              ]}
               onPress={handleSaveContact}
+              disabled={isCurrentContactSaved}
               testID="save-contact-button"
             >
               <MaterialCommunityIcons
-                name="content-save"
+                name={isCurrentContactSaved ? "check" : "content-save"}
                 size={20}
                 color="#fff"
               />
-              <Text style={Styles.buttonText}>Save Contact</Text>
+              <Text style={Styles.buttonText}>
+                {isCurrentContactSaved ? "Saved" : "Save Contact"}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -335,23 +367,33 @@ const ScannerScreen = () => {
   );
 };
 
-// Styles must be declared after the component
 const Styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000",
   },
+  cameraContainer: {
+    flex: 1,
+  },
   overlay: {
     position: "absolute",
-    bottom: 20,
+    bottom: 112,
     left: 0,
     right: 0,
     alignItems: "center",
+    paddingHorizontal: 20,
   },
   instructionText: {
     color: "#fff",
     fontSize: 16,
     marginTop: 8,
+    textAlign: "center",
+  },
+  subInstructionText: {
+    color: "#d9e7ff",
+    fontSize: 13,
+    marginTop: 4,
+    textAlign: "center",
   },
   captureButton: {
     position: "absolute",
@@ -359,7 +401,7 @@ const Styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#fff",
+    backgroundColor: "#0066cc",
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
@@ -369,13 +411,20 @@ const Styles = StyleSheet.create({
     marginTop: 40,
     color: "#fff",
     fontSize: 18,
+    paddingHorizontal: 20,
   },
   button: {
     marginVertical: 20,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     paddingVertical: 15,
     backgroundColor: "#0066cc",
     borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 100,
+  },
+  buttonDisabled: {
+    backgroundColor: "#5f8cbf",
   },
   buttonText: {
     color: "#fff",
@@ -406,6 +455,12 @@ const Styles = StyleSheet.create({
     backgroundColor: "#f5f5f5",
     borderRadius: 8,
   },
+  savedBanner: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1b6f3a",
+    marginBottom: 16,
+  },
   contactInfoContainer: {
     marginBottom: 20,
   },
@@ -423,6 +478,8 @@ const Styles = StyleSheet.create({
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-around",
+    flexWrap: "wrap",
+    gap: 12,
   },
 });
 

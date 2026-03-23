@@ -1,6 +1,8 @@
+import { ParsedContactInfo } from "../types/contact";
+
 // Utility function to parse contact information from OCR extracted text
-export const parseContactInfo = (text: string): ContactInfo => {
-  const info: ContactInfo = {};
+export const parseContactInfo = (text: string): ParsedContactInfo => {
+  const info: ParsedContactInfo = {};
 
   // Simple regex patterns for common contact info
   const emailMatch = text.match(

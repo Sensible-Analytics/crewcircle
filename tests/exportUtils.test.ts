@@ -1,12 +1,16 @@
-import * as exportUtils from "../src/utils/exportUtils";
+import RNFS from "react-native-fs";
+import Share from "react-native-share";
+import {
+  exportContactAsVCard,
+  exportContactsAsCSV,
+} from "../src/utils/exportUtils";
+import { createContact, normalizeContactDraft } from "../src/types/contact";
 
-// Mock react-native-fs
 jest.mock("react-native-fs", () => ({
   DocumentDirectoryPath: "/test/path",
   writeFile: jest.fn().mockResolvedValue(undefined),
 }));
 
-// Mock react-native-share
 jest.mock("react-native-share", () => ({
   open: jest.fn().mockResolvedValue(true),
 }));
@@ -17,25 +21,24 @@ describe("exportUtils", () => {
   });
 
   describe("exportContactAsVCard", () => {
-    it("should export a contact with all fields as VCard", async () => {
-      const contact = {
+    it("exports a contact with all fields as a VCard", async () => {
+      const contact = normalizeContactDraft({
         name: "John Doe",
         email: "john@example.com",
         phone: "123-456-7890",
         company: "Acme Inc",
         address: "123 Main St",
         website: "https://example.com",
-      };
+      });
 
-      const result = await exportUtils.exportContactAsVCard(contact);
+      await exportContactAsVCard(contact);
 
-      expect(result).toBe(true);
-
-      // Verify RNFS.writeFile was called
-      expect(require("react-native-fs").writeFile).toHaveBeenCalled();
-
-      // Verify Share.open was called
-      expect(require("react-native-share").open).toHaveBeenCalledWith(
+      expect(RNFS.writeFile).toHaveBeenCalledWith(
+        expect.stringContaining("John_Doe.vcf"),
+        expect.stringContaining("BEGIN:VCARD"),
+        "utf8"
+      );
+      expect(Share.open).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining(".vcf"),
           type: "text/vcard",
@@ -44,76 +47,51 @@ describe("exportUtils", () => {
       );
     });
 
-    it("should export a contact with minimal fields as VCard", async () => {
-      const contact = {
-        name: "Jane Doe",
-      };
+    it("throws when the VCard write fails", async () => {
+      jest
+        .mocked(RNFS.writeFile)
+        .mockRejectedValueOnce(new Error("Write failed"));
 
-      const result = await exportUtils.exportContactAsVCard(contact);
+      await expect(
+        exportContactAsVCard(
+          normalizeContactDraft({
+            name: "Jane Doe",
+          })
+        )
+      ).rejects.toThrow("Write failed");
 
-      expect(result).toBe(true);
-
-      // Verify RNFS.writeFile was called
-      expect(require("react-native-fs").writeFile).toHaveBeenCalled();
-
-      // Verify Share.open was called
-      expect(require("react-native-share").open).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: expect.stringContaining(".vcf"),
-          type: "text/vcard",
-          title: "Share contact",
-        })
-      );
-    });
-
-    it("should handle export failure gracefully", async () => {
-      // Mock writeFile to reject
-      require("react-native-fs").writeFile.mockRejectedValueOnce(
-        new Error("Write failed")
-      );
-
-      const contact = {
-        name: "John Doe",
-        email: "john@example.com",
-      };
-
-      const result = await exportUtils.exportContactAsVCard(contact);
-
-      expect(result).toBe(false);
-
-      // Verify Share.open was NOT called
-      expect(require("react-native-share").open).not.toHaveBeenCalled();
+      expect(Share.open).not.toHaveBeenCalled();
     });
   });
 
   describe("exportContactsAsCSV", () => {
-    it("should export multiple contacts as CSV", async () => {
+    it("exports multiple contacts as CSV", async () => {
       const contacts = [
-        {
+        createContact({
           name: "John Doe",
           email: "john@example.com",
           phone: "123-456-7890",
           company: "Acme Inc",
           address: "123 Main St",
           website: "https://example.com",
-          scannedAt: "2023-01-01T10:00:00Z",
-        },
-        {
+        }),
+        createContact({
           name: "Jane Smith",
           email: "jane@example.com",
           phone: "098-765-4321",
-        },
+        }),
       ];
 
-      const result = await exportUtils.exportContactsAsCSV(contacts);
+      await exportContactsAsCSV(contacts);
 
-      expect(result).toBe(true);
-
-      // Verify RNFS.writeFile was called
-      expect(require("react-native-fs").writeFile).toHaveBeenCalled();
-
-      // Verify Share.open was called
-      expect(require("react-native-share").open).toHaveBeenCalledWith(
+      expect(RNFS.writeFile).toHaveBeenCalledWith(
+        expect.stringContaining("contacts.csv"),
+        expect.stringContaining(
+          "Name,Email,Phone,Company,Address,Website,Scanned At"
+        ),
+        "utf8"
+      );
+      expect(Share.open).toHaveBeenCalledWith(
         expect.objectContaining({
           url: expect.stringContaining(".csv"),
           type: "text/csv",
@@ -122,45 +100,14 @@ describe("exportUtils", () => {
       );
     });
 
-    it("should handle empty contacts array", async () => {
-      const contacts: any[] = [];
+    it("throws when the CSV write fails", async () => {
+      jest
+        .mocked(RNFS.writeFile)
+        .mockRejectedValueOnce(new Error("Write failed"));
 
-      const result = await exportUtils.exportContactsAsCSV(contacts);
+      await expect(exportContactsAsCSV([])).rejects.toThrow("Write failed");
 
-      expect(result).toBe(true);
-
-      // Verify RNFS.writeFile was called
-      expect(require("react-native-fs").writeFile).toHaveBeenCalled();
-
-      // Verify Share.open was called
-      expect(require("react-native-share").open).toHaveBeenCalledWith(
-        expect.objectContaining({
-          url: expect.stringContaining(".csv"),
-          type: "text/csv",
-          title: "Share contacts",
-        })
-      );
-    });
-
-    it("should handle export failure gracefully", async () => {
-      // Mock writeFile to reject
-      require("react-native-fs").writeFile.mockRejectedValueOnce(
-        new Error("Write failed")
-      );
-
-      const contacts = [
-        {
-          name: "John Doe",
-          email: "john@example.com",
-        },
-      ];
-
-      const result = await exportUtils.exportContactsAsCSV(contacts);
-
-      expect(result).toBe(false);
-
-      // Verify Share.open was NOT called
-      expect(require("react-native-share").open).not.toHaveBeenCalled();
+      expect(Share.open).not.toHaveBeenCalled();
     });
   });
 });

@@ -12,6 +12,19 @@ import { it } from "@jest/globals";
 // Note: test renderer must be required after react-native.
 import renderer from "react-test-renderer";
 
+jest.mock("@react-navigation/native", () => ({
+  NavigationContainer: ({ children }: { children: React.ReactNode }) => {
+    return children;
+  },
+}));
+
+jest.mock("../src/navigation/AppNavigator", () => ({
+  AppNavigator: () => {
+    const { View } = require("react-native");
+    return <View testID="app-navigator" />;
+  },
+}));
+
 it("renders correctly", () => {
   renderer.create(<App />);
 });

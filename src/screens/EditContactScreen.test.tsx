@@ -1,331 +1,183 @@
-// Mock all modules first
-jest.mock("@react-navigation/native");
-jest.mock("../utils/storage");
-jest.mock("../utils/errorHandler");
-
-// Import the component after mocks are set up
 import React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react-native";
+import { Alert } from "react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import EditContactScreen from "./EditContactScreen";
+import { Contact, createContact } from "../types/contact";
+import storageUtils from "../utils/storage";
+import { showErrorAlert } from "../utils/errorHandler";
+
+jest.mock("../utils/storage", () => ({
+  __esModule: true,
+  default: {
+    getContacts: jest.fn(),
+    updateContact: jest.fn(),
+    deleteContact: jest.fn(),
+  },
+}));
+
+jest.mock("../utils/errorHandler", () => ({
+  __esModule: true,
+  showErrorAlert: jest.fn(),
+}));
+
+type EditContactScreenProps = React.ComponentProps<typeof EditContactScreen>;
+
+const mockedStorageUtils = storageUtils as jest.Mocked<typeof storageUtils>;
+const mockedShowErrorAlert = showErrorAlert as jest.MockedFunction<
+  typeof showErrorAlert
+>;
+const mockedAlert = Alert.alert as jest.MockedFunction<typeof Alert.alert>;
+const mockGoBack = jest.fn();
+let consoleWarnSpy: jest.SpyInstance;
+
+const contact: Contact = createContact(
+  {
+    name: "Jane Doe",
+    email: "jane@example.com",
+    phone: "098-765-4321",
+    company: "XYZ Corp",
+    address: "456 Oak Ave",
+    website: "https://xyz.com",
+  },
+  {
+    id: "contact-1",
+    scannedAt: "2026-03-24T00:00:00.000Z",
+  }
+);
+
+const createProps = (): EditContactScreenProps => {
+  return {
+    route: {
+      key: "EditContact-contact-1",
+      name: "EditContact",
+      params: { contactId: "contact-1" },
+    },
+    navigation: {
+      goBack: mockGoBack,
+    } as unknown as EditContactScreenProps["navigation"],
+  };
+};
 
 describe("EditContactScreen", () => {
-  // Set up default mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
 
-    // Mock the navigation and route objects
-    const navigateMock = jest.fn();
-    const goBackMock = jest.fn();
-
-    // Mock useNavigation and useRoute from @react-navigation/native
-    require("@react-navigation/native").useNavigation = jest
-      .fn()
-      .mockReturnValue({ navigate: navigateMock, goBack: goBackMock });
-    require("@react-navigation/native").useRoute = jest
-      .fn()
-      .mockReturnValue({ params: { contactId: "1" } });
-
-    // Default mock for storage - since the component imports the default export,
-    // we need to mock the default export's methods
-    const storageUtilsMock = {
-      getContacts: jest.fn().mockResolvedValue([]),
-      deleteContact: jest.fn().mockResolvedValue(undefined),
-      saveContacts: jest.fn().mockResolvedValue(undefined),
-      addContact: jest.fn().mockResolvedValue(undefined),
-      updateContact: jest.fn().mockResolvedValue(undefined),
-      getSetting: jest.fn().mockResolvedValue(null),
-      saveSetting: jest.fn().mockResolvedValue(undefined),
-      getOcrLanguages: jest.fn().mockResolvedValue(["eng"]),
-      saveOcrLanguages: jest.fn().mockResolvedValue(undefined),
-    };
-    // Mock the default export
-    require("../utils/storage").__esModule = true;
-    require("../utils/storage").default = storageUtilsMock;
-
-    // Default mock for errorHandler
-    const errorHandlerMock = {
-      showErrorAlert: jest.fn(),
-      handleError: jest.fn(),
-    };
-    // Mock the default export
-    require("../utils/errorHandler").__esModule = true;
-    require("../utils/errorHandler").default = errorHandlerMock;
+    mockedStorageUtils.getContacts.mockResolvedValue([contact]);
+    mockedStorageUtils.updateContact.mockResolvedValue(contact);
+    mockedStorageUtils.deleteContact.mockResolvedValue();
   });
 
-  it("renders without crashing", () => {
-    render(<EditContactScreen />);
-    expect(screen.getByText(/Edit Contact/i)).toBeTruthy();
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
   });
 
-  it("shows loading state when contact is being fetched", async () => {
-    // Mock getContacts to return a promise that resolves after a delay
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve([]), 100);
-        })
-    );
+  it("loads and displays the selected contact", async () => {
+    render(<EditContactScreen {...createProps()} />);
 
-    render(<EditContactScreen />);
-    expect(screen.getByText(/Loading contact.../i)).toBeTruthy();
-
-    // Wait for loading to complete
-    await waitFor(
-      () => {
-        return screen.queryByText(/Loading contact.../i) === null;
-      },
-      { timeout: 1000 }
+    expect(await screen.findByTestId("name-input")).toHaveProp(
+      "value",
+      "Jane Doe"
     );
+    expect(screen.getByTestId("email-input")).toHaveProp(
+      "value",
+      "jane@example.com"
+    );
+    expect(screen.getByTestId("phone-input")).toHaveProp(
+      "value",
+      "098-765-4321"
+    );
+    expect(screen.getByTestId("company-input")).toHaveProp("value", "XYZ Corp");
   });
 
-  it("shows error when contact is not found", async () => {
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([]); // Empty contacts array
+  it("saves edits while preserving contact identity fields", async () => {
+    render(<EditContactScreen {...createProps()} />);
 
-    render(<EditContactScreen />);
+    const nameInput = await screen.findByTestId("name-input");
+    fireEvent.changeText(nameInput, "Jane Smith");
+    fireEvent.press(screen.getByTestId("save-button"));
 
-    // Wait for loading to complete and error to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/Error/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Verify Alert.alert was called with error message
-    expect(require("react-native").Alert.alert).toHaveBeenCalledWith(
-      "Error",
-      "Contact not found"
-    );
-
-    // Verify navigation.goBack was called
-    const { goBack } = require("@react-navigation/native").useNavigation();
-    expect(goBack).toHaveBeenCalled();
-  });
-
-  it("displays contact details when loaded successfully", async () => {
-    const mockContact = {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "123-456-7890",
-      company: "Acme Inc",
-      address: "123 Main St",
-      website: "https://example.com",
-      scannedAt: "2023-01-01T10:00:00Z",
-    };
-
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([mockContact]);
-
-    render(<EditContactScreen />);
-
-    // Wait for loading to complete and contact details to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    expect(screen.getByText(/John Doe/i)).toBeTruthy();
-    expect(screen.getByText(/john@example.com/i)).toBeTruthy();
-    expect(screen.getByText(/123-456-7890/i)).toBeTruthy();
-    expect(screen.getByText(/Acme Inc/i)).toBeTruthy();
-    expect(screen.getByText(/123 Main St/i)).toBeTruthy();
-    expect(screen.getByText(/https:\/\/example.com/i)).toBeTruthy();
-
-    // Verify loading indicator is gone
-    expect(screen.queryByText(/Loading contact.../i)).toBeNull();
-  });
-
-  it("saves contact when save button is pressed", async () => {
-    const mockContact = {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "123-456-7890",
-      company: "Acme Inc",
-      address: "123 Main St",
-      website: "https://example.com",
-      scannedAt: "2023-01-01T10:00:00Z",
-    };
-
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([mockContact]);
-    storageUtils.updateContact = jest.fn().mockResolvedValue(undefined);
-
-    render(<EditContactScreen />);
-
-    // Wait for loading to complete and contact details to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press save button
-    const saveButton = screen.getByText(/Save Changes/i);
-    await act(async () => {
-      saveButton.props.onPress();
+    await waitFor(() => {
+      expect(mockedStorageUtils.updateContact).toHaveBeenCalledTimes(1);
     });
 
-    // Verify updateContact was called with correct parameters
-    expect(storageUtils.updateContact).toHaveBeenCalledWith(
-      "1",
+    expect(mockedStorageUtils.updateContact).toHaveBeenCalledWith(
+      "contact-1",
       expect.objectContaining({
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "123-456-7890",
-        company: "Acme Inc",
-        address: "123 Main St",
-        website: "https://example.com",
-        // scannedAt will be a recent date, so we won't check the exact value
+        id: "contact-1",
+        scannedAt: "2026-03-24T00:00:00.000Z",
+        name: "Jane Smith",
+        updatedAt: expect.any(String),
       })
     );
-
-    // Verify success alert was shown
-    expect(require("react-native").Alert.alert).toHaveBeenCalledWith(
+    expect(mockedAlert).toHaveBeenCalledWith(
       "Success",
       "Contact updated successfully!"
     );
-
-    // Verify navigation.goBack was called
-    const { goBack } = require("@react-navigation/native").useNavigation();
-    expect(goBack).toHaveBeenCalled();
+    expect(mockGoBack).toHaveBeenCalled();
   });
 
-  it("shows error when saving contact fails", async () => {
-    const mockContact = {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "123-456-7890",
-      company: "Acme Inc",
-      address: "123 Main St",
-      website: "https://example.com",
-      scannedAt: "2023-01-01T10:00:00Z",
-    };
+  it("shows an error and navigates back when the contact does not exist", async () => {
+    mockedStorageUtils.getContacts.mockResolvedValueOnce([]);
 
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([mockContact]);
-    // Mock updateContact to reject
-    storageUtils.updateContact = jest
-      .fn()
-      .mockRejectedValue(new Error("Save failed"));
+    render(<EditContactScreen {...createProps()} />);
 
-    render(<EditContactScreen />);
-
-    // Wait for loading to complete and contact details to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press save button
-    const saveButton = screen.getByText(/Save Changes/i);
-    await act(async () => {
-      saveButton.props.onPress();
+    await waitFor(() => {
+      expect(mockedAlert).toHaveBeenCalledWith("Error", "Contact not found");
     });
-
-    // Verify error handler was called
-    const errorHandler = require("../utils/errorHandler").default;
-    expect(errorHandler.showErrorAlert).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Save failed" }),
-      "Save contact"
-    );
+    expect(mockGoBack).toHaveBeenCalled();
   });
 
-  it("deletes contact when delete button is pressed", async () => {
-    const mockContact = {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "123-456-7890",
-      company: "Acme Inc",
-      address: "123 Main St",
-      website: "https://example.com",
-      scannedAt: "2023-01-01T10:00:00Z",
-    };
+  it("prevents saving when the name is empty", async () => {
+    render(<EditContactScreen {...createProps()} />);
 
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([mockContact]);
-    storageUtils.deleteContact = jest.fn().mockResolvedValue(undefined);
+    const nameInput = await screen.findByTestId("name-input");
+    fireEvent.changeText(nameInput, "   ");
+    fireEvent.press(screen.getByTestId("save-button"));
 
-    render(<EditContactScreen />);
-
-    // Wait for loading to complete and contact details to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press delete button
-    const deleteButton = screen.getByText(/Delete Contact/i);
-    await act(async () => {
-      deleteButton.props.onPress();
-    });
-
-    // Verify deleteContact was called with the right ID
-    expect(storageUtils.deleteContact).toHaveBeenCalledWith("1");
-
-    // Verify navigation.goBack was called
-    const { goBack } = require("@react-navigation/native").useNavigation();
-    expect(goBack).toHaveBeenCalled();
+    expect(mockedAlert).toHaveBeenCalledWith("Error", "Name is required");
+    expect(mockedStorageUtils.updateContact).not.toHaveBeenCalled();
   });
 
-  it("shows error when name is empty and save is pressed", async () => {
-    const mockContact = {
-      id: "1",
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "123-456-7890",
-      company: "Acme Inc",
-      address: "123 Main St",
-      website: "https://example.com",
-      scannedAt: "2023-01-01T10:00:00Z",
-    };
+  it("deletes the contact after confirmation", async () => {
+    render(<EditContactScreen {...createProps()} />);
 
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([mockContact]);
+    await screen.findByTestId("name-input");
+    fireEvent.press(screen.getByTestId("delete-button"));
 
-    render(<EditContactScreen />);
+    const deleteAlertCall = mockedAlert.mock.calls.find(
+      ([title]) => title === "Delete Contact"
+    );
+    const buttons = deleteAlertCall?.[2] as
+      | Array<{ text?: string; onPress?: () => void | Promise<void> }>
+      | undefined;
+    const deleteButton = buttons?.find((button) => button.text === "Delete");
 
-    // Wait for loading to complete and contact details to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
+    expect(deleteButton).toBeTruthy();
+
+    await deleteButton?.onPress?.();
+
+    expect(mockedStorageUtils.deleteContact).toHaveBeenCalledWith("contact-1");
+    expect(mockGoBack).toHaveBeenCalled();
+  });
+
+  it("routes load failures through the shared error handler", async () => {
+    mockedStorageUtils.getContacts.mockRejectedValueOnce(
+      new Error("Load failed")
     );
 
-    // Clear the name field
-    const nameInput = screen.getByPlaceholderText(/Enter name/i);
-    await act(async () => {
-      nameInput.props.onChangeText("");
+    render(<EditContactScreen {...createProps()} />);
+
+    await waitFor(() => {
+      expect(mockedShowErrorAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Load failed" }),
+        "Load contact"
+      );
     });
-
-    // Find and press save button
-    const saveButton = screen.getByText(/Save Changes/i);
-    await act(async () => {
-      saveButton.props.onPress();
-    });
-
-    // Verify error alert is shown
-    expect(require("react-native").Alert.alert).toHaveBeenCalledWith(
-      "Error",
-      "Name is required"
-    );
-
-    // Verify updateContact was NOT called
-    const storageUtilsCheck = require("../utils/storage").default;
-    expect(storageUtilsCheck.updateContact).not.toHaveBeenCalled();
   });
 });

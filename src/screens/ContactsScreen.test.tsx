@@ -1,312 +1,205 @@
-// Mock all modules first
-jest.mock("@react-navigation/native");
-jest.mock("../utils/storage");
-jest.mock("../utils/exportUtils");
-jest.mock("../utils/errorHandler");
-
-// Import the component after mocks are set up
 import React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react-native";
+import { Alert } from "react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import ContactsScreen from "./ContactsScreen";
+import { Contact, createContact } from "../types/contact";
+import storageUtils from "../utils/storage";
+import { exportContactsAsCSV } from "../utils/exportUtils";
+import { showErrorAlert } from "../utils/errorHandler";
+
+const mockNavigate = jest.fn();
+
+jest.mock("@react-navigation/native", () => {
+  const ReactModule = require("react");
+
+  return {
+    useNavigation: () => ({
+      navigate: mockNavigate,
+    }),
+    useFocusEffect: (callback: () => void | (() => void)) => {
+      ReactModule.useEffect(() => {
+        const cleanup = callback();
+        return cleanup;
+      }, [callback]);
+    },
+  };
+});
+
+jest.mock("../utils/storage", () => ({
+  __esModule: true,
+  default: {
+    getContacts: jest.fn(),
+    deleteContact: jest.fn(),
+  },
+}));
+
+jest.mock("../utils/exportUtils", () => ({
+  __esModule: true,
+  exportContactsAsCSV: jest.fn(),
+}));
+
+jest.mock("../utils/errorHandler", () => ({
+  __esModule: true,
+  showErrorAlert: jest.fn(),
+}));
+
+const mockedStorageUtils = storageUtils as jest.Mocked<typeof storageUtils>;
+const mockedExportContactsAsCSV = exportContactsAsCSV as jest.MockedFunction<
+  typeof exportContactsAsCSV
+>;
+const mockedShowErrorAlert = showErrorAlert as jest.MockedFunction<
+  typeof showErrorAlert
+>;
+const mockedAlert = Alert.alert as jest.MockedFunction<typeof Alert.alert>;
+let consoleWarnSpy: jest.SpyInstance;
+
+const contacts: Contact[] = [
+  createContact(
+    {
+      name: "John Doe",
+      email: "john@example.com",
+      phone: "123-456-7890",
+      company: "Acme Inc",
+    },
+    {
+      id: "contact-1",
+      scannedAt: "2026-03-24T00:00:00.000Z",
+    }
+  ),
+];
 
 describe("ContactsScreen", () => {
-  // Set up default mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
 
-    // Default mock for useNavigation
-    const navigateMock = jest.fn();
-    require("@react-navigation/native").useNavigation = jest
-      .fn()
-      .mockReturnValue({ navigate: navigateMock });
-
-    // Default mock for storage - since the component imports the default export,
-    // we need to mock the default export's methods
-    const storageUtilsMock = {
-      getContacts: jest.fn().mockResolvedValue([]),
-      deleteContact: jest.fn().mockResolvedValue(undefined),
-      saveContacts: jest.fn().mockResolvedValue(undefined),
-      addContact: jest.fn().mockResolvedValue(undefined),
-      updateContact: jest.fn().mockResolvedValue(undefined),
-      getSetting: jest.fn().mockResolvedValue(null),
-      saveSetting: jest.fn().mockResolvedValue(undefined),
-      getOcrLanguages: jest.fn().mockResolvedValue(["eng"]),
-      saveOcrLanguages: jest.fn().mockResolvedValue(undefined),
-    };
-    // Mock the default export
-    require("../utils/storage").__esModule = true;
-    require("../utils/storage").default = storageUtilsMock;
-
-    // Default mock for exportUtils
-    const exportUtilsMock = {
-      exportContactsAsCSV: jest.fn().mockResolvedValue(undefined),
-      exportContactAsVCard: jest.fn().mockResolvedValue(true),
-    };
-    // Mock the default export
-    require("../utils/exportUtils").__esModule = true;
-    require("../utils/exportUtils").default = exportUtilsMock;
-
-    // Default mock for errorHandler
-    const errorHandlerMock = {
-      showErrorAlert: jest.fn(),
-      handleError: jest.fn(),
-    };
-    // Mock the default export
-    require("../utils/errorHandler").__esModule = true;
-    require("../utils/errorHandler").default = errorHandlerMock;
+    mockedStorageUtils.getContacts.mockResolvedValue([]);
+    mockedStorageUtils.deleteContact.mockResolvedValue();
+    mockedExportContactsAsCSV.mockResolvedValue();
   });
 
-  it("renders without crashing", () => {
-    render(<ContactsScreen />);
-    expect(screen.getByText(/My Contacts/i)).toBeTruthy();
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
   });
 
-  it("shows loading state when contacts are being fetched", async () => {
-    // Mock getContacts to return a promise that resolves after a delay
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockImplementation(
+  it("shows loading state before contacts are loaded", () => {
+    mockedStorageUtils.getContacts.mockImplementation(
       () =>
-        new Promise((resolve) => {
-          setTimeout(() => resolve([]), 100);
+        new Promise(() => {
+          return;
         })
     );
 
     render(<ContactsScreen />);
-    expect(screen.getByText(/Loading contacts.../i)).toBeTruthy();
 
-    // Wait for loading to complete
-    await waitFor(
-      () => {
-        return screen.queryByText(/Loading contacts.../i) === null;
-      },
-      { timeout: 1000 }
-    );
+    expect(screen.getByText("Loading contacts...")).toBeTruthy();
   });
 
-  it("displays contacts when loaded successfully", async () => {
-    const mockContacts = [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "123-456-7890",
-        company: "Acme Inc",
-        scannedAt: "2023-01-01T10:00:00Z",
-      },
-    ];
-
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue(mockContacts);
+  it("renders contacts from storage", async () => {
+    mockedStorageUtils.getContacts.mockResolvedValueOnce(contacts);
 
     render(<ContactsScreen />);
 
-    // Wait for loading to complete and contacts to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    expect(screen.getByText(/John Doe/i)).toBeTruthy();
-    expect(screen.getByText(/john@example.com/i)).toBeTruthy();
+    expect(await screen.findByText("John Doe")).toBeTruthy();
+    expect(screen.getByText(/john@example\.com/i)).toBeTruthy();
     expect(screen.getByText(/123-456-7890/i)).toBeTruthy();
     expect(screen.getByText(/Acme Inc/i)).toBeTruthy();
-
-    // Verify empty state is not shown
-    expect(screen.queryByText(/No contacts yet/i)).toBeNull();
   });
 
-  it("shows empty state when no contacts exist", async () => {
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([]);
+  it("shows an empty state when no contacts exist", async () => {
+    render(<ContactsScreen />);
+
+    expect(await screen.findByText(/No contacts yet/i)).toBeTruthy();
+  });
+
+  it("navigates to edit when a contact row is pressed", async () => {
+    mockedStorageUtils.getContacts.mockResolvedValueOnce(contacts);
 
     render(<ContactsScreen />);
 
-    // Wait for loading to complete
-    await waitFor(
-      () => {
-        return screen.queryByText(/Loading contacts.../i) === null;
-      },
-      { timeout: 2000 }
-    );
+    const contactRow = await screen.findByTestId("contact-item-contact-1");
+    fireEvent.press(contactRow);
 
-    expect(screen.getByText(/No contacts yet/i)).toBeTruthy();
+    expect(mockNavigate).toHaveBeenCalledWith("EditContact", {
+      contactId: "contact-1",
+    });
   });
 
-  it("deletes contact when delete button is pressed", async () => {
-    const mockContacts = [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "123-456-7890",
-        company: "Acme Inc",
-        scannedAt: "2023-01-01T10:00:00Z",
-      },
-    ];
-
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue(mockContacts);
+  it("exports all contacts from the header action", async () => {
+    mockedStorageUtils.getContacts.mockResolvedValueOnce(contacts);
 
     render(<ContactsScreen />);
 
-    // Wait for contacts to load
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
+    await screen.findByText("John Doe");
+    fireEvent.press(screen.getByTestId("export-all-contacts-button"));
 
-    // For testing delete functionality, we'll directly test the deleteContact function
-    // since testing the actual button press is complex without testIDs
+    await waitFor(() => {
+      expect(mockedExportContactsAsCSV).toHaveBeenCalledWith(contacts);
+    });
+    expect(mockedAlert).toHaveBeenCalledWith(
+      "Success",
+      "All contacts exported as CSV!"
+    );
+  });
+
+  it("shows an info alert when export is pressed with no contacts", async () => {
+    render(<ContactsScreen />);
+
+    await screen.findByText(/No contacts yet/i);
+    fireEvent.press(screen.getByTestId("export-all-contacts-button"));
+
+    expect(mockedAlert).toHaveBeenCalledWith("Info", "No contacts to export");
+  });
+
+  it("routes export failures through the shared error handler", async () => {
+    mockedStorageUtils.getContacts.mockResolvedValueOnce(contacts);
+    mockedExportContactsAsCSV.mockRejectedValueOnce(new Error("Export failed"));
+
+    render(<ContactsScreen />);
+
+    await screen.findByText("John Doe");
+    fireEvent.press(screen.getByTestId("export-all-contacts-button"));
+
+    await waitFor(() => {
+      expect(mockedShowErrorAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Export failed" }),
+        "Export contacts"
+      );
+    });
+  });
+
+  it("deletes a contact after confirmation", async () => {
+    mockedStorageUtils.getContacts.mockResolvedValue(contacts);
+
+    render(<ContactsScreen />);
+
+    await screen.findByText("John Doe");
+    const deleteButtonNode = screen.getByTestId("delete-button-contact-1");
     await act(async () => {
-      await storageUtils.deleteContact("1");
+      fireEvent(deleteButtonNode, "press", {
+        stopPropagation: jest.fn(),
+      });
     });
 
-    // Verify deleteContact was called with the right ID
-    expect(storageUtils.deleteContact).toHaveBeenCalledWith("1");
-  });
-
-  it("refreshes contacts when pull-to-refresh is triggered", async () => {
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([]);
-
-    render(<ContactsScreen />);
-
-    // Wait for initial load
-    await waitFor(
-      () => {
-        return screen.queryByText(/Loading contacts.../i) === null;
-      },
-      { timeout: 2000 }
+    const deleteAlertCall = mockedAlert.mock.calls.find(
+      ([title]) => title === "Delete Contact"
     );
+    const buttons = deleteAlertCall?.[2] as
+      | Array<{ text?: string; onPress?: () => void | Promise<void> }>
+      | undefined;
+    const deleteButton = buttons?.find((button) => button.text === "Delete");
 
-    // Mock a second call to getContacts for the refresh
-    storageUtils.getContacts.mockResolvedValueOnce([]);
+    expect(deleteButton).toBeTruthy();
 
-    // Simulate refresh by calling getContacts again (simulating what loadContacts does)
-    await act(async () => {
-      await storageUtils.getContacts();
-    });
+    await deleteButton?.onPress?.();
 
-    // Verify getContacts was called again
-    expect(storageUtils.getContacts).toHaveBeenCalledTimes(2);
-  });
-
-  it("exports all contacts when export button is pressed", async () => {
-    const mockContacts = [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "123-456-7890",
-        company: "Acme Inc",
-        scannedAt: "2023-01-01T10:00:00Z",
-      },
-    ];
-
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue(mockContacts);
-
-    render(<ContactsScreen />);
-
-    // Wait for contacts to load
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press export button - we'll simulate by calling the function directly
-    const exportUtils = require("../utils/exportUtils").default;
-    await act(async () => {
-      await exportUtils.exportContactsAsCSV(mockContacts);
-    });
-
-    // Verify export function was called with contacts
-    expect(exportUtils.exportContactsAsCSV).toHaveBeenCalledWith(mockContacts);
-  });
-
-  it("shows info alert when trying to export with no contacts", async () => {
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue([]);
-
-    render(<ContactsScreen />);
-
-    // Wait for initial load
-    await waitFor(
-      () => {
-        return screen.queryByText(/Loading contacts.../i) === null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Try to export - should show info alert
-    await act(async () => {
-      const contacts = await storageUtils.getContacts();
-      if (contacts.length === 0) {
-        // Simulate the Alert.alert call from the component
-        require("react-native").Alert.alert("Info", "No contacts to export");
-      }
-    });
-
-    // Verify Alert.alert was called with info message
-    expect(require("react-native").Alert.alert).toHaveBeenCalledWith(
-      "Info",
-      "No contacts to export"
-    );
-  });
-
-  it("handles export error gracefully", async () => {
-    const mockContacts = [
-      {
-        id: "1",
-        name: "John Doe",
-        email: "john@example.com",
-        phone: "123-456-7890",
-        company: "Acme Inc",
-        scannedAt: "2023-01-01T10:00:00Z",
-      },
-    ];
-
-    const storageUtils = require("../utils/storage").default;
-    storageUtils.getContacts = jest.fn().mockResolvedValue(mockContacts);
-
-    // Mock export function to reject
-    const exportUtils = require("../utils/exportUtils").default;
-    exportUtils.exportContactsAsCSV = jest
-      .fn()
-      .mockRejectedValue(new Error("Export failed"));
-
-    render(<ContactsScreen />);
-
-    // Wait for contacts to load
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Try to export and catch error
-    await act(async () => {
-      try {
-        await exportUtils.exportContactsAsCSV(mockContacts);
-      } catch (error) {
-        // Simulate the error handling from the component
-        const errorHandler = require("../utils/errorHandler").default;
-        errorHandler.showErrorAlert(error, "Export contacts");
-      }
-    });
-
-    // Verify error handler was called
-    const errorHandler = require("../utils/errorHandler").default;
-    expect(errorHandler.showErrorAlert).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "Export failed" }),
-      "Export contacts"
-    );
+    expect(mockedStorageUtils.deleteContact).toHaveBeenCalledWith("contact-1");
+    expect(mockedStorageUtils.getContacts).toHaveBeenCalledTimes(2);
   });
 });

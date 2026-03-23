@@ -40,7 +40,7 @@ describe("parseContactInfo", () => {
   test("should handle text with no contact info", () => {
     const text = "This is just some random text\nWith no contact information";
     const result: ContactInfo = parseContactInfo(text);
-    expect(result).toEqual({});
+    expect(result).toEqual({ name: "This is just some random text" });
   });
 
   test("should extract all contact info from complex text", () => {

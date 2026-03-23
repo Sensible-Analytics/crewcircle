@@ -1,57 +1,55 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
-  TextInput,
-  ScrollView,
   KeyboardAvoidingView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import storageUtils from "../utils/storage";
+import { ContactsStackParamList } from "../navigation/types";
+import { Contact } from "../types/contact";
 import { showErrorAlert } from "../utils/errorHandler";
+import storageUtils from "../utils/storage";
 
-type Contact = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  address?: string;
-  website?: string;
-  scannedAt: string;
-};
+type Props = NativeStackScreenProps<ContactsStackParamList, "EditContact">;
 
-const EditContactScreen = ({ route, navigation }: any) => {
+const EditContactScreen = ({ route, navigation }: Props) => {
   const { contactId } = route.params;
   const [contact, setContact] = useState<Contact | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [name, setName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [phone, setPhone] = useState<string>("");
-  const [company, setCompany] = useState<string>("");
-  const [address, setAddress] = useState<string>("");
-  const [website, setWebsite] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [company, setCompany] = useState("");
+  const [address, setAddress] = useState("");
+  const [website, setWebsite] = useState("");
 
   const loadContact = useCallback(async () => {
     setLoading(true);
     try {
       const contacts = await storageUtils.getContacts();
-      const foundContact = contacts.find((c: any) => c.id === contactId);
-      if (foundContact) {
-        setContact(foundContact);
-        setName(foundContact.name || "");
-        setEmail(foundContact.email || "");
-        setPhone(foundContact.phone || "");
-        setCompany(foundContact.company || "");
-        setAddress(foundContact.address || "");
-        setWebsite(foundContact.website || "");
-      } else {
+      const foundContact = contacts.find((currentContact) => {
+        return currentContact.id === contactId;
+      });
+
+      if (!foundContact) {
         Alert.alert("Error", "Contact not found");
         navigation.goBack();
+        return;
       }
+
+      setContact(foundContact);
+      setName(foundContact.name);
+      setEmail(foundContact.email);
+      setPhone(foundContact.phone);
+      setCompany(foundContact.company);
+      setAddress(foundContact.address);
+      setWebsite(foundContact.website);
     } catch (error) {
       console.warn("Failed to load contact:", error);
       showErrorAlert(error, "Load contact");
@@ -70,16 +68,21 @@ const EditContactScreen = ({ route, navigation }: any) => {
       return;
     }
 
+    if (!contact) {
+      Alert.alert("Error", "Contact not found");
+      return;
+    }
+
     try {
       const updatedContact: Contact = {
-        id: contactId,
+        ...contact,
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim(),
         company: company.trim(),
         address: address.trim(),
         website: website.trim(),
-        scannedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       await storageUtils.updateContact(contactId, updatedContact);
@@ -89,7 +92,17 @@ const EditContactScreen = ({ route, navigation }: any) => {
       console.warn("Failed to save contact:", error);
       showErrorAlert(error, "Save contact");
     }
-  }, [contactId, name, email, phone, company, address, website, navigation]);
+  }, [
+    address,
+    company,
+    contact,
+    contactId,
+    email,
+    name,
+    navigation,
+    phone,
+    website,
+  ]);
 
   const handleDeleteContact = useCallback(() => {
     Alert.alert(
@@ -104,8 +117,13 @@ const EditContactScreen = ({ route, navigation }: any) => {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
-            await storageUtils.deleteContact(contactId);
-            navigation.goBack();
+            try {
+              await storageUtils.deleteContact(contactId);
+              navigation.goBack();
+            } catch (error) {
+              console.warn("Delete error:", error);
+              showErrorAlert(error, "Delete contact");
+            }
           },
         },
       ]
@@ -139,7 +157,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
         <Text style={Styles.headerTitle} testID="header-title">
           Edit Contact
         </Text>
-        <View style={{ width: 24 }} />
+        <View style={Styles.headerSpacer} />
       </View>
 
       <ScrollView
@@ -228,6 +246,17 @@ const EditContactScreen = ({ route, navigation }: any) => {
           />
         </View>
 
+        <View style={Styles.metaGroup}>
+          <Text style={Styles.metaText}>
+            Scanned: {new Date(contact.scannedAt).toLocaleString()}
+          </Text>
+          {contact.updatedAt ? (
+            <Text style={Styles.metaText}>
+              Last updated: {new Date(contact.updatedAt).toLocaleString()}
+            </Text>
+          ) : null}
+        </View>
+
         <View style={Styles.buttonContainer} testID="button-container">
           <TouchableOpacity
             style={Styles.button}
@@ -269,16 +298,17 @@ const Styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
     backgroundColor: "#0066cc",
-    borderBottomWidth: 1,
-    borderColor: "#eee",
   },
   backButton: {
-    padding: 8,
+    padding: 4,
   },
   headerTitle: {
-    color: "#fff",
     fontSize: 20,
     fontWeight: "600",
+    color: "#fff",
+  },
+  headerSpacer: {
+    width: 24,
   },
   loadingContainer: {
     flex: 1,
@@ -291,9 +321,10 @@ const Styles = StyleSheet.create({
   },
   formContainer: {
     padding: 16,
+    paddingBottom: 32,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 16,
@@ -302,35 +333,46 @@ const Styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    height: 48,
     borderWidth: 1,
     borderColor: "#ddd",
     borderRadius: 8,
     paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 16,
+    color: "#333",
+  },
+  metaGroup: {
+    marginBottom: 20,
+  },
+  metaText: {
+    fontSize: 13,
+    color: "#666",
+    marginBottom: 4,
   },
   buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 24,
-    padding: 16,
+    gap: 12,
   },
   button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 24,
     backgroundColor: "#0066cc",
-    borderRadius: 8,
   },
   buttonDelete: {
-    backgroundColor: "#ff4444",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 24,
+    backgroundColor: "#d64545",
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 8,
   },
 });

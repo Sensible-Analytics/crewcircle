@@ -1,24 +1,32 @@
 import RNFS from "react-native-fs";
 import Share from "react-native-share";
+import { Contact, ContactDraft, normalizeContactDraft } from "../types/contact";
 
-export const exportContactAsVCard = async (contact: any) => {
+export const exportContactAsVCard = async (
+  contact: Contact | ContactDraft
+): Promise<void> => {
+  const normalizedContact = normalizeContactDraft(contact);
+
   try {
     const vCard = [
       "BEGIN:VCARD",
       "VERSION:3.0",
-      `N:${contact.name || ""};;;;`,
-      `FN:${contact.name || ""}`,
-      contact.email ? `EMAIL:${contact.email}` : "",
-      contact.phone ? `TEL:${contact.phone}` : "",
-      contact.company ? `ORG:${contact.company}` : "",
-      contact.address ? `ADR:${contact.address}` : "",
-      contact.website ? `URL:${contact.website}` : "",
+      `N:${normalizedContact.name};;;;`,
+      `FN:${normalizedContact.name}`,
+      normalizedContact.email ? `EMAIL:${normalizedContact.email}` : "",
+      normalizedContact.phone ? `TEL:${normalizedContact.phone}` : "",
+      normalizedContact.company ? `ORG:${normalizedContact.company}` : "",
+      normalizedContact.address ? `ADR:${normalizedContact.address}` : "",
+      normalizedContact.website ? `URL:${normalizedContact.website}` : "",
       "END:VCARD",
     ]
       .filter((line) => line !== "")
       .join("\n");
 
-    const fileName = `${contact.name || "contact"}.vcf`.replace(/\s/g, "_");
+    const fileName = `${normalizedContact.name || "contact"}.vcf`.replace(
+      /\s/g,
+      "_"
+    );
     const filePath = `${RNFS.DocumentDirectoryPath}/${fileName}`;
 
     await RNFS.writeFile(filePath, vCard, "utf8");
@@ -28,15 +36,15 @@ export const exportContactAsVCard = async (contact: any) => {
       type: "text/vcard",
       title: "Share contact",
     });
-
-    return true;
   } catch (error) {
     console.warn("Failed to export contact:", error);
-    return false;
+    throw error;
   }
 };
 
-export const exportContactsAsCSV = async (contacts: any[]) => {
+export const exportContactsAsCSV = async (
+  contacts: Contact[]
+): Promise<void> => {
   try {
     const header = [
       "Name",
@@ -79,10 +87,8 @@ export const exportContactsAsCSV = async (contacts: any[]) => {
       type: "text/csv",
       title: "Share contacts",
     });
-
-    return true;
   } catch (error) {
     console.warn("Failed to export contacts:", error);
-    return false;
+    throw error;
   }
 };

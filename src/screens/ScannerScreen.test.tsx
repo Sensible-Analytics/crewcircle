@@ -1,313 +1,258 @@
-// Mock all modules first
-jest.mock("react-native-vision-camera");
-jest.mock("rn-mlkit-ocr");
-jest.mock("../utils/storage");
-jest.mock("../utils/exportUtils");
-jest.mock("../utils/errorHandler");
-
-// Import the component and the showErrorAlert function after mocks are set up
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { Alert } from "react-native";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
+import MlkitOcr from "rn-mlkit-ocr";
+import { useCameraDevice } from "react-native-vision-camera";
 import ScannerScreen from "./ScannerScreen";
-const { showErrorAlert } = require("../src/utils/errorHandler");
+import storageUtils from "../utils/storage";
+import { exportContactAsVCard } from "../utils/exportUtils";
+import { showErrorAlert } from "../utils/errorHandler";
+
+const mockTakePhoto = jest.fn();
+const mockRequestCameraPermission = jest.fn();
+
+jest.mock("@react-navigation/native", () => {
+  const ReactModule = require("react");
+
+  return {
+    useFocusEffect: (callback: () => void | (() => void)) => {
+      ReactModule.useEffect(() => {
+        const cleanup = callback();
+        return cleanup;
+      }, [callback]);
+    },
+  };
+});
+
+jest.mock("react-native-vision-camera", () => {
+  const ReactModule = require("react");
+  const { View } = require("react-native");
+
+  const MockCamera = ReactModule.forwardRef((_props: unknown, ref: unknown) => {
+    ReactModule.useImperativeHandle(ref, () => ({
+      takePhoto: mockTakePhoto,
+    }));
+
+    return <View testID="mock-camera" />;
+  });
+
+  Object.assign(MockCamera, {
+    requestCameraPermission: mockRequestCameraPermission,
+  });
+
+  return {
+    Camera: MockCamera,
+    useCameraDevice: jest.fn(() => ({
+      id: "back-camera",
+      position: "back",
+    })),
+  };
+});
+
+jest.mock("rn-mlkit-ocr", () => ({
+  __esModule: true,
+  default: {
+    recognizeText: jest.fn(),
+  },
+}));
+
+jest.mock("../utils/storage", () => ({
+  __esModule: true,
+  default: {
+    addContact: jest.fn(),
+    getOcrLanguages: jest.fn(),
+    getAutoSaveEnabled: jest.fn(),
+  },
+}));
+
+jest.mock("../utils/exportUtils", () => ({
+  __esModule: true,
+  exportContactAsVCard: jest.fn(),
+}));
+
+jest.mock("../utils/errorHandler", () => ({
+  __esModule: true,
+  showErrorAlert: jest.fn(),
+}));
+
+const mockedMlkitOcr = MlkitOcr as jest.Mocked<typeof MlkitOcr>;
+const mockedStorageUtils = storageUtils as jest.Mocked<typeof storageUtils>;
+const mockedUseCameraDevice = useCameraDevice as jest.MockedFunction<
+  typeof useCameraDevice
+>;
+const mockedExportContactAsVCard = exportContactAsVCard as jest.MockedFunction<
+  typeof exportContactAsVCard
+>;
+const mockedShowErrorAlert = showErrorAlert as jest.MockedFunction<
+  typeof showErrorAlert
+>;
+const mockedAlert = Alert.alert as jest.MockedFunction<typeof Alert.alert>;
+let consoleWarnSpy: jest.SpyInstance;
+let consoleErrorSpy: jest.SpyInstance;
 
 describe("ScannerScreen", () => {
-  // Set up default mocks before each test
+  beforeAll(() => {
+    consoleErrorSpy = jest
+      .spyOn(console, "error")
+      .mockImplementation((...args) => {
+        const [message] = args;
+
+        if (
+          typeof message === "string" &&
+          message.includes("not wrapped in act")
+        ) {
+          return;
+        }
+      });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
+    consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
 
-    // Default mock for react-native-vision-camera
-    require("react-native-vision-camera").Camera = jest
-      .fn()
-      .mockImplementation(() => ({
-        takePicture: jest.fn().mockResolvedValue({ uri: "test-uri" }),
-        requestCameraPermission: jest.fn().mockResolvedValue("authorized"),
-      }));
+    const visionCameraModule = jest.requireMock(
+      "react-native-vision-camera"
+    ) as {
+      Camera: { requestCameraPermission?: typeof mockRequestCameraPermission };
+    };
+    visionCameraModule.Camera.requestCameraPermission =
+      mockRequestCameraPermission;
 
-    // Default mock for rn-mlkit-ocr
-    require("rn-mlkit-ocr").recognizeText = jest.fn().mockResolvedValue({
+    mockedUseCameraDevice.mockReturnValue({
+      id: "back-camera",
+      position: "back",
+    } as never);
+    mockRequestCameraPermission.mockResolvedValue("granted");
+    mockTakePhoto.mockResolvedValue({ path: "/tmp/test-photo.jpg" });
+    mockedMlkitOcr.recognizeText.mockResolvedValue({
       text: "John Doe\njohn.doe@example.com\n+1-555-123-4567\nAcme Inc.",
+      blocks: [],
+    });
+    mockedStorageUtils.getOcrLanguages.mockResolvedValue(["eng"]);
+    mockedStorageUtils.getAutoSaveEnabled.mockResolvedValue(true);
+    mockedStorageUtils.addContact.mockImplementation(
+      async (contact) => contact
+    );
+    mockedExportContactAsVCard.mockResolvedValue();
+  });
+
+  afterEach(() => {
+    consoleWarnSpy.mockRestore();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("shows the denied state when camera permission is rejected", async () => {
+    mockRequestCameraPermission.mockResolvedValueOnce("denied");
+
+    render(<ScannerScreen />);
+
+    expect(
+      await screen.findByText(/Camera permission is required to scan/i)
+    ).toBeTruthy();
+    expect(screen.getByTestId("grant-permission-button")).toBeTruthy();
+  });
+
+  it("captures text and auto-saves using the selected OCR detector", async () => {
+    mockedStorageUtils.getOcrLanguages.mockResolvedValueOnce(["chi_sim"]);
+
+    render(<ScannerScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("capture-button")).toBeTruthy();
     });
 
-    // Default mock for storage
-    require("../utils/storage").addContact = jest.fn();
-    require("../utils/storage").getContacts = jest.fn().mockReturnValue([]);
-    require("../utils/storage").deleteContact = jest.fn();
-    require("../utils/storage").updateContact = jest.fn();
-    require("../utils/storage").saveSetting = jest.fn();
-    require("../utils/storage").getSetting = jest.fn().mockReturnValue(null);
-    require("../utils/storage").saveOcrLanguages = jest.fn();
-    require("../utils/storage").getOcrLanguages = jest.fn().mockReturnValue([]);
+    fireEvent.press(screen.getByTestId("capture-button"));
 
-    // Default mock for exportUtils
-    require("../utils/exportUtils").exportContactAsVCard = jest
-      .fn()
-      .mockResolvedValue(true);
-
-    // Default mock for errorHandler
-    require("../utils/errorHandler").showErrorAlert = jest.fn();
-  });
-
-  it("renders without crashing", () => {
-    render(<ScannerScreen />);
-    expect(screen.getByText(/Requesting camera permission/i)).toBeTruthy();
-  });
-
-  it("handles camera permission granted", async () => {
-    render(<ScannerScreen />);
-    // Wait for the permission request to complete and the text to disappear
-    await waitFor(
-      () => {
-        const requestingText = screen.queryByText(
-          /Requesting camera permission/i
-        );
-        return !requestingText;
-      },
-      { timeout: 2000 }
+    expect(await screen.findByText("Saved to contacts")).toBeTruthy();
+    expect(mockedMlkitOcr.recognizeText).toHaveBeenCalledWith(
+      "file:///tmp/test-photo.jpg",
+      "chinese"
+    );
+    expect(mockedStorageUtils.addContact).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "John Doe",
+        email: "john.doe@example.com",
+        phone: "+1-555-123-4567",
+        company: "Acme Inc.",
+        id: expect.any(String),
+        scannedAt: expect.any(String),
+      })
     );
   });
 
-  it("captures image and processes OCR when camera permission granted", async () => {
-    render(<ScannerScreen />);
-
-    // Wait for permission to be granted (text disappears)
-    await waitFor(
-      () => {
-        const requestingText = screen.queryByText(
-          /Requesting camera permission/i
-        );
-        return !requestingText;
-      },
-      { timeout: 2000 }
-    );
-
-    // Find the capture button (should be the only button in the camera view)
-    // Use findByRole to wait for the button to appear
-    const captureButton = await screen.findByRole("button");
-    await captureButton.props.onPress();
-
-    // Wait for OCR processing to complete and results to appear
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i);
-      },
-      { timeout: 2000 }
-    );
-
-    // Verify parsed contact info is displayed
-    expect(screen.getByText(/John Doe/i)).toBeTruthy();
-    expect(screen.getByText(/john.doe@example.com/i)).toBeTruthy();
-    expect(screen.getByText(/\+1-555-123-4567/i)).toBeTruthy();
-    expect(screen.getByText(/Acme Inc./i)).toBeTruthy();
-  });
-
-  it("handles camera permission denied", async () => {
-    // Override the mock for react-native-vision-camera to return denied
-    require("react-native-vision-camera").Camera = jest
-      .fn()
-      .mockImplementation(() => ({
-        takePicture: jest.fn().mockResolvedValue({ uri: "test-uri" }),
-        requestCameraPermission: jest.fn().mockResolvedValue("denied"),
-      }));
+  it("allows manual save when auto-save is disabled", async () => {
+    mockedStorageUtils.getAutoSaveEnabled.mockResolvedValueOnce(false);
 
     render(<ScannerScreen />);
 
-    // Wait for permission denied state
-    await waitFor(
-      () => {
-        return (
-          screen.getByText(/Camera permission is required/i) !== null ||
-          screen.getByText(/Grant Permission/i) !== null
-        );
-      },
-      { timeout: 2000 }
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("capture-button")).toBeTruthy();
+    });
 
-    // Verify permission button exists
-    const permissionButton = screen.getByText(/Grant Permission/i);
-    expect(permissionButton).toBeTruthy();
-  });
+    fireEvent.press(screen.getByTestId("capture-button"));
 
-  it("saves contact when save button is pressed", async () => {
-    render(<ScannerScreen />);
+    expect(await screen.findByText("Save Contact")).toBeTruthy();
+    expect(mockedStorageUtils.addContact).not.toHaveBeenCalled();
 
-    // Wait for permission to be granted (text disappears)
-    await waitFor(
-      () => {
-        const requestingText = screen.queryByText(
-          /Requesting camera permission/i
-        );
-        return !requestingText;
-      },
-      { timeout: 2000 }
-    );
+    fireEvent.press(screen.getByTestId("save-contact-button"));
 
-    // Find and press capture button
-    const captureButton = await screen.findByRole("button");
-    await captureButton.props.onPress();
-
-    // Wait for OCR results
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i);
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press save button
-    const saveButton = screen.getByText(/Save Contact/i);
-    await saveButton.props.onPress();
-
-    // Verify storage addContact was called
-    expect(require("../utils/storage").addContact).toHaveBeenCalled();
-
-    // Verify success by checking we return to initial state (permission requesting text returns)
-    await waitFor(
-      () => {
-        return screen.queryByText(/Requesting camera permission/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Verify no error alert was shown for this flow
-    expect(showErrorAlert).not.toHaveBeenCalledWith(
-      expect.objectContaining({ message: /Failed to save contact/i }),
-      expect.anything()
+    await waitFor(() => {
+      expect(mockedStorageUtils.addContact).toHaveBeenCalledTimes(1);
+    });
+    expect(mockedAlert).toHaveBeenCalledWith(
+      "Success",
+      "Contact saved successfully!"
     );
   });
 
-  it("shows error when OCR fails", async () => {
-    // Override the mock for rn-mlkit-ocr to throw an error
-    require("rn-mlkit-ocr").recognizeText = jest
-      .fn()
-      .mockRejectedValue(new Error("OCR failed"));
+  it("exports the parsed contact when export is pressed", async () => {
+    mockedStorageUtils.getAutoSaveEnabled.mockResolvedValueOnce(false);
 
     render(<ScannerScreen />);
 
-    // Wait for permission to be granted
-    await waitFor(
-      () => {
-        const requestingText = screen.queryByText(
-          /Requesting camera permission/i
-        );
-        return !requestingText;
-      },
-      { timeout: 2000 }
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("capture-button")).toBeTruthy();
+    });
 
-    // Find and press capture button
-    const captureButton = await screen.findByRole("button");
-    await captureButton.props.onPress();
+    fireEvent.press(screen.getByTestId("capture-button"));
+    await screen.findByText("Export");
 
-    // Wait for error handling
-    await waitFor(
-      () => {
-        return showErrorAlert.mock.calls.length > 0;
-      },
-      { timeout: 2000 }
-    );
+    fireEvent.press(screen.getByTestId("export-contact-button"));
 
-    // Verify error handler was called
-    expect(showErrorAlert).toHaveBeenCalledWith(
-      expect.objectContaining({ message: "OCR failed" }),
-      "OCR processing"
-    );
+    await waitFor(() => {
+      expect(mockedExportContactAsVCard).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "John Doe",
+          email: "john.doe@example.com",
+        })
+      );
+    });
   });
 
-  it("exports contact as VCard when export button is pressed", async () => {
+  it("shows an OCR error through the shared error handler", async () => {
+    mockedMlkitOcr.recognizeText.mockRejectedValueOnce(new Error("OCR failed"));
+
     render(<ScannerScreen />);
 
-    // Wait for permission to be granted (text disappears)
-    await waitFor(
-      () => {
-        const requestingText = screen.queryByText(
-          /Requesting camera permission/i
-        );
-        return !requestingText;
-      },
-      { timeout: 2000 }
-    );
+    await waitFor(() => {
+      expect(screen.getByTestId("capture-button")).toBeTruthy();
+    });
 
-    // Find and press capture button
-    const captureButton = await screen.findByRole("button");
-    await captureButton.props.onPress();
+    fireEvent.press(screen.getByTestId("capture-button"));
 
-    // Wait for OCR results
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i);
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press export button
-    const exportButton = screen.getByText(/Export/i);
-    await exportButton.props.onPress();
-
-    // Verify export function was called
-    expect(
-      require("../utils/exportUtils").exportContactAsVCard
-    ).toHaveBeenCalled();
-
-    // Verify success by checking we return to initial state (permission requesting text returns)
-    await waitFor(
-      () => {
-        return screen.queryByText(/Requesting camera permission/i) !== null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Verify no error alert was shown for export failure
-    expect(showErrorAlert).not.toHaveBeenCalledWith(
-      expect.objectContaining({ message: /Failed to export contact/i }),
-      expect.anything()
-    );
-  });
-
-  it("retakes photo when retake button is pressed", async () => {
-    render(<ScannerScreen />);
-
-    // Wait for permission to be granted (text disappears)
-    await waitFor(
-      () => {
-        const requestingText = screen.queryByText(
-          /Requesting camera permission/i
-        );
-        return !requestingText;
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press capture button
-    const captureButton = await screen.findByRole("button");
-    await captureButton.props.onPress();
-
-    // Wait for OCR results
-    await waitFor(
-      () => {
-        return screen.getByText(/John Doe/i);
-      },
-      { timeout: 2000 }
-    );
-
-    // Find and press retake button
-    const retakeButton = screen.getByText(/Retake/i);
-    await retakeButton.props.onPress();
-
-    // Verify results view is hidden
-    await waitFor(
-      () => {
-        return screen.queryByText(/Extracted Information/i) === null;
-      },
-      { timeout: 2000 }
-    );
-
-    // Verify camera view is shown again (permission requesting text returns)
-    await waitFor(
-      () => {
-        return screen.queryByText(/Requesting camera permission/i) !== null;
-      },
-      { timeout: 2000 }
-    );
+    await waitFor(() => {
+      expect(mockedShowErrorAlert).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "OCR failed" }),
+        "OCR processing"
+      );
+    });
   });
 });

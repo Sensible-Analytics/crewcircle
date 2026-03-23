@@ -1,32 +1,29 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
   Alert,
+  FlatList,
   RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useFocusEffect,
+  useNavigation,
+  type NavigationProp,
+} from "@react-navigation/native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-import storageUtils from "../utils/storage";
+import { ContactsStackParamList } from "../navigation/types";
+import { Contact } from "../types/contact";
 import { showErrorAlert } from "../utils/errorHandler";
 import { exportContactsAsCSV } from "../utils/exportUtils";
-
-type Contact = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  company: string;
-  scannedAt: string;
-};
+import storageUtils from "../utils/storage";
 
 const Separator = () => <View style={Styles.separator} />;
 
 const ContactsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<ContactsStackParamList>>();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -39,31 +36,46 @@ const ContactsScreen = () => {
     } catch (error) {
       console.warn("Failed to load contacts:", error);
       setContacts([]);
+      showErrorAlert(error, "Load contacts");
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const handleDeleteContact = (id: string) => {
-    Alert.alert(
-      "Delete Contact",
-      "Are you sure you want to delete this contact?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel" as const,
-        },
-        {
-          text: "Delete",
-          style: "destructive" as const,
-          onPress: async () => {
-            await storageUtils.deleteContact(id);
-            loadContacts();
+  useFocusEffect(
+    useCallback(() => {
+      loadContacts();
+    }, [loadContacts])
+  );
+
+  const handleDeleteContact = useCallback(
+    (id: string) => {
+      Alert.alert(
+        "Delete Contact",
+        "Are you sure you want to delete this contact?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
           },
-        },
-      ]
-    );
-  };
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await storageUtils.deleteContact(id);
+                await loadContacts();
+              } catch (error) {
+                console.warn("Delete error:", error);
+                showErrorAlert(error, "Delete contact");
+              }
+            },
+          },
+        ]
+      );
+    },
+    [loadContacts]
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
@@ -85,9 +97,12 @@ const ContactsScreen = () => {
     }
   }, [contacts]);
 
-  useEffect(() => {
-    loadContacts();
-  }, [loadContacts]);
+  const handleManualAdd = useCallback(() => {
+    Alert.alert(
+      "Manual Add",
+      "Manual contact creation is not implemented yet. Use the scanner to add contacts."
+    );
+  }, []);
 
   const renderContact = ({ item }: { item: Contact }) => {
     return (
@@ -99,18 +114,20 @@ const ContactsScreen = () => {
         testID={`contact-item-${item.id}`}
       >
         <View style={Styles.contactInfo}>
-          <Text style={Styles.contactName}>{item.name}</Text>
+          <Text style={Styles.contactName}>
+            {item.name || "Unnamed Contact"}
+          </Text>
           <Text style={Styles.contactDetail}>
             <MaterialCommunityIcons name="email" size={16} color="#666" />{" "}
-            {item.email}
+            {item.email || "No email"}
           </Text>
           <Text style={Styles.contactDetail}>
             <MaterialCommunityIcons name="phone" size={16} color="#666" />{" "}
-            {item.phone}
+            {item.phone || "No phone"}
           </Text>
           <Text style={Styles.contactDetail}>
             <MaterialCommunityIcons name="factory" size={16} color="#666" />{" "}
-            {item.company}
+            {item.company || "No company"}
           </Text>
           <Text style={Styles.contactDate}>
             Scanned: {new Date(item.scannedAt).toLocaleDateString()}
@@ -118,8 +135,8 @@ const ContactsScreen = () => {
         </View>
         <TouchableOpacity
           style={Styles.deleteButton}
-          onPress={(e) => {
-            e.stopPropagation();
+          onPress={(event) => {
+            event.stopPropagation();
             handleDeleteContact(item.id);
           }}
           testID={`delete-button-${item.id}`}
@@ -135,7 +152,10 @@ const ContactsScreen = () => {
       <View style={Styles.container}>
         <View style={Styles.header}>
           <Text style={Styles.headerTitle}>My Contacts</Text>
-          <TouchableOpacity style={Styles.headerButton} onPress={() => {}}>
+          <TouchableOpacity
+            style={Styles.headerButton}
+            onPress={handleManualAdd}
+          >
             <MaterialCommunityIcons name="plus" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -162,7 +182,7 @@ const ContactsScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={Styles.headerButton}
-            onPress={() => {}}
+            onPress={handleManualAdd}
             testID="add-contact-button"
           >
             <MaterialCommunityIcons name="plus" size={20} color="#fff" />
@@ -186,7 +206,7 @@ const ContactsScreen = () => {
         testID="contacts-list"
       />
 
-      {contacts.length === 0 && (
+      {contacts.length === 0 ? (
         <View style={Styles.emptyState} testID="empty-state-view">
           <MaterialCommunityIcons
             name="account-multiple"
@@ -197,7 +217,7 @@ const ContactsScreen = () => {
             No contacts yet. Scan a business card to get started!
           </Text>
         </View>
-      )}
+      ) : null}
     </View>
   );
 };
@@ -230,6 +250,7 @@ const Styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: 20,
+    flexGrow: 1,
   },
   loadingContainer: {
     flex: 1,

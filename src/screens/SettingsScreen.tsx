@@ -1,73 +1,197 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
+  Alert,
   StyleSheet,
   Switch,
-  Alert,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import {
+  AppSettings,
+  DataUsagePreference,
+  DEFAULT_APP_SETTINGS,
+} from "../types/settings";
+import { showErrorAlert } from "../utils/errorHandler";
+import storageUtils from "../utils/storage";
+
+const AVAILABLE_LANGUAGES = [
+  "eng",
+  "spa",
+  "fra",
+  "deu",
+  "ita",
+  "por",
+  "rus",
+  "jap",
+  "kor",
+  "chi_sim",
+];
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  eng: "English",
+  spa: "Spanish",
+  fra: "French",
+  deu: "German",
+  ita: "Italian",
+  por: "Portuguese",
+  rus: "Russian",
+  jap: "Japanese",
+  kor: "Korean",
+  chi_sim: "Chinese (Simplified)",
+};
 
 const SettingsScreen = () => {
-  const [ocrLanguages, setOcrLanguages] = useState<string[]>(["eng"]);
-  const [availableLanguages] = useState<string[]>([
-    "eng",
-    "spa",
-    "fra",
-    "deu",
-    "ita",
-    "por",
-    "rus",
-    "jap",
-    "kor",
-    "chi_sim",
-  ]);
-  const [languageNames] = useState<Record<string, string>>({
-    eng: "English",
-    spa: "Spanish",
-    fra: "French",
-    deu: "German",
-    ita: "Italian",
-    por: "Portuguese",
-    rus: "Russian",
-    jap: "Japanese",
-    kor: "Korean",
-    chi_sim: "Chinese (Simplified)",
-  });
-  const [autoSave, setAutoSave] = useState(true);
-  const [notificationEnabled, setNotificationEnabled] = useState(true);
-  const [dataUsage, setDataUsage] = useState<"wifi-only" | "cellular">(
-    "wifi-only"
+  const [ocrLanguages, setOcrLanguages] = useState<string[]>(
+    DEFAULT_APP_SETTINGS.ocrLanguages
+  );
+  const [autoSave, setAutoSave] = useState(DEFAULT_APP_SETTINGS.autoSave);
+  const [notificationEnabled, setNotificationEnabled] = useState(
+    DEFAULT_APP_SETTINGS.notificationEnabled
+  );
+  const [dataUsage, setDataUsage] = useState<DataUsagePreference>(
+    DEFAULT_APP_SETTINGS.dataUsage
+  );
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadSettings = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const settings = await storageUtils.getAppSettings();
+
+      setOcrLanguages(settings.ocrLanguages);
+      setAutoSave(settings.autoSave);
+      setNotificationEnabled(settings.notificationEnabled);
+      setDataUsage(settings.dataUsage);
+    } catch (error) {
+      console.warn("Failed to load settings:", error);
+      showErrorAlert(error, "Load settings");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
+
+  const persistSettings = useCallback(
+    async (nextSettings: Partial<AppSettings>) => {
+      try {
+        const updates: Promise<void>[] = [];
+
+        if (nextSettings.ocrLanguages) {
+          updates.push(
+            storageUtils.saveOcrLanguages(nextSettings.ocrLanguages)
+          );
+        }
+
+        if (typeof nextSettings.autoSave === "boolean") {
+          updates.push(storageUtils.saveAutoSaveEnabled(nextSettings.autoSave));
+        }
+
+        if (typeof nextSettings.notificationEnabled === "boolean") {
+          updates.push(
+            storageUtils.saveNotificationEnabled(
+              nextSettings.notificationEnabled
+            )
+          );
+        }
+
+        if (nextSettings.dataUsage) {
+          updates.push(
+            storageUtils.saveDataUsagePreference(nextSettings.dataUsage)
+          );
+        }
+
+        await Promise.all(updates);
+      } catch (error) {
+        console.warn("Failed to persist settings:", error);
+        showErrorAlert(error, "Save settings");
+        throw error;
+      }
+    },
+    []
   );
 
-  const toggleLanguage = (language: string) => {
-    setOcrLanguages((prev) => {
-      if (prev.includes(language)) {
-        return prev.filter((lang) => lang !== language);
-      } else {
-        return [...prev, language];
+  const toggleLanguage = useCallback(
+    async (language: string) => {
+      const nextLanguages = ocrLanguages.includes(language)
+        ? ocrLanguages.filter((currentLanguage) => currentLanguage !== language)
+        : [...ocrLanguages, language];
+
+      setOcrLanguages(nextLanguages);
+
+      try {
+        await persistSettings({ ocrLanguages: nextLanguages });
+      } catch (error) {
+        setOcrLanguages(ocrLanguages);
       }
-    });
-  };
+    },
+    [ocrLanguages, persistSettings]
+  );
 
-  const handleExportData = () => {
-    Alert.alert(
-      "Export Data",
-      "This feature will allow you to export your contacts and settings. Coming soon!",
-      [{ text: "OK", style: "cancel" }]
-    );
-  };
+  const handleAutoSaveChange = useCallback(
+    async (value: boolean) => {
+      setAutoSave(value);
 
-  const handleImportData = () => {
+      try {
+        await persistSettings({ autoSave: value });
+      } catch (error) {
+        setAutoSave(!value);
+      }
+    },
+    [persistSettings]
+  );
+
+  const handleNotificationChange = useCallback(
+    async (value: boolean) => {
+      setNotificationEnabled(value);
+
+      try {
+        await persistSettings({ notificationEnabled: value });
+      } catch (error) {
+        setNotificationEnabled(!value);
+      }
+    },
+    [persistSettings]
+  );
+
+  const handleDataUsageChange = useCallback(
+    async (value: DataUsagePreference) => {
+      const previousValue = dataUsage;
+      setDataUsage(value);
+
+      try {
+        await persistSettings({ dataUsage: value });
+      } catch (error) {
+        setDataUsage(previousValue);
+      }
+    },
+    [dataUsage, persistSettings]
+  );
+
+  const handleExportData = useCallback(async () => {
+    try {
+      const contacts = await storageUtils.getContacts();
+      Alert.alert(
+        "Export Data",
+        `Export currently supports contacts CSV/VCard sharing from the Contacts screen. ${contacts.length} contact(s) available.`
+      );
+    } catch (error) {
+      showErrorAlert(error, "Export data");
+    }
+  }, []);
+
+  const handleImportData = useCallback(() => {
     Alert.alert(
       "Import Data",
-      "This feature will allow you to import your contacts and settings. Coming soon!",
-      [{ text: "OK", style: "cancel" }]
+      "Import is not implemented yet. Export support is available from the Contacts screen."
     );
-  };
+  }, []);
 
-  const handleResetApp = () => {
+  const handleResetApp = useCallback(() => {
     Alert.alert(
       "Reset App",
       "Are you sure you want to reset all data and settings? This action cannot be undone.",
@@ -76,14 +200,37 @@ const SettingsScreen = () => {
         {
           text: "Reset",
           style: "destructive",
-          onPress: () => {
-            // TODO: Implement reset functionality
-            Alert.alert("Success", "App has been reset to default settings.");
+          onPress: async () => {
+            try {
+              await storageUtils.resetAppData();
+              setOcrLanguages(DEFAULT_APP_SETTINGS.ocrLanguages);
+              setAutoSave(DEFAULT_APP_SETTINGS.autoSave);
+              setNotificationEnabled(DEFAULT_APP_SETTINGS.notificationEnabled);
+              setDataUsage(DEFAULT_APP_SETTINGS.dataUsage);
+              Alert.alert("Success", "App has been reset to default settings.");
+            } catch (error) {
+              showErrorAlert(error, "Reset app");
+            }
           },
         },
       ]
     );
-  };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={Styles.container}>
+        <View style={Styles.header} testID="header">
+          <Text style={Styles.headerTitle} testID="header-title">
+            Settings
+          </Text>
+        </View>
+        <View style={Styles.loadingContainer}>
+          <Text style={Styles.loadingText}>Loading settings...</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={Styles.container} testID="settings-screen">
@@ -97,25 +244,27 @@ const SettingsScreen = () => {
         <Text style={Styles.sectionTitle} testID="section-title">
           OCR Settings
         </Text>
-        {availableLanguages.map((lang) => (
+        {AVAILABLE_LANGUAGES.map((language) => (
           <View
-            key={lang}
+            key={language}
             style={Styles.languageRow}
-            testID={`language-row-${lang}`}
+            testID={`language-row-${language}`}
           >
             <TouchableOpacity
               style={[
                 Styles.languageButton,
-                ocrLanguages.includes(lang) ? Styles.selectedLanguage : {},
+                ocrLanguages.includes(language)
+                  ? Styles.selectedLanguage
+                  : null,
               ]}
-              onPress={() => toggleLanguage(lang)}
-              testID={`language-toggle-${lang}`}
+              onPress={() => toggleLanguage(language)}
+              testID={`language-toggle-${language}`}
             >
               <Text
                 style={Styles.languageText}
-                testID={`language-text-${lang}`}
+                testID={`language-text-${language}`}
               >
-                {languageNames[lang] || lang}
+                {LANGUAGE_NAMES[language] ?? language}
               </Text>
             </TouchableOpacity>
           </View>
@@ -132,7 +281,7 @@ const SettingsScreen = () => {
           </Text>
           <Switch
             value={autoSave}
-            onValueChange={setAutoSave}
+            onValueChange={handleAutoSaveChange}
             thumbColor={autoSave ? "#f5dd4b" : "#f4f3f4"}
             trackColor={{ false: "#767577", true: "#81b0ff" }}
             testID="auto-save-switch"
@@ -144,7 +293,7 @@ const SettingsScreen = () => {
           </Text>
           <Switch
             value={notificationEnabled}
-            onValueChange={setNotificationEnabled}
+            onValueChange={handleNotificationChange}
             thumbColor={notificationEnabled ? "#f5dd4b" : "#f4f3f4"}
             trackColor={{ false: "#767577", true: "#81b0ff" }}
             testID="notifications-switch"
@@ -158,9 +307,9 @@ const SettingsScreen = () => {
             <TouchableOpacity
               style={[
                 Styles.dataUsageOption,
-                dataUsage === "wifi-only" ? Styles.selectedDataUsage : {},
+                dataUsage === "wifi-only" ? Styles.selectedDataUsage : null,
               ]}
-              onPress={() => setDataUsage("wifi-only")}
+              onPress={() => handleDataUsageChange("wifi-only")}
               testID="wifi-only-option"
             >
               <Text style={Styles.dataUsageText} testID="data-usage-text">
@@ -170,9 +319,9 @@ const SettingsScreen = () => {
             <TouchableOpacity
               style={[
                 Styles.dataUsageOption,
-                dataUsage === "cellular" ? Styles.selectedDataUsage : {},
+                dataUsage === "cellular" ? Styles.selectedDataUsage : null,
               ]}
-              onPress={() => setDataUsage("cellular")}
+              onPress={() => handleDataUsageChange("cellular")}
               testID="cellular-option"
             >
               <Text style={Styles.dataUsageText} testID="data-usage-text">
@@ -259,68 +408,73 @@ const Styles = StyleSheet.create({
     color: "#333",
     marginBottom: 12,
   },
-  languageRow: {
-    flexDirection: "row",
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderColor: "#f0f0f0",
+  },
+  loadingText: {
+    fontSize: 18,
+    color: "#666",
+  },
+  languageRow: {
+    marginBottom: 10,
   },
   languageButton: {
-    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#d0d7e2",
+    borderRadius: 8,
   },
   selectedLanguage: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: "#e6f0ff",
+    borderColor: "#0066cc",
   },
   languageText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#333",
   },
   settingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: "#eee",
+    marginBottom: 16,
   },
   settingLabel: {
     fontSize: 16,
     color: "#333",
+    marginBottom: 8,
   },
   dataUsageOptions: {
     flexDirection: "row",
+    gap: 12,
   },
   dataUsageOption: {
-    paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 20,
-    marginRight: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#d0d7e2",
+    borderRadius: 8,
   },
   selectedDataUsage: {
-    backgroundColor: "#e3f2fd",
+    backgroundColor: "#e6f0ff",
+    borderColor: "#0066cc",
   },
   dataUsageText: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#333",
   },
   button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 12,
-    marginHorizontal: 16,
+    gap: 8,
+    marginBottom: 12,
+    paddingVertical: 14,
+    borderRadius: 24,
     backgroundColor: "#0066cc",
-    borderRadius: 8,
-    marginVertical: 8,
   },
   buttonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
-    marginLeft: 8,
   },
 });
