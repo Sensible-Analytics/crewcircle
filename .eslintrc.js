@@ -4,6 +4,21 @@ module.exports = {
   env: {
     jest: true,
   },
+  overrides: [
+    {
+      files: ["e2e/**/*.e2e.js"],
+      globals: {
+        device: "readonly",
+        element: "readonly",
+        expect: "readonly",
+        by: "readonly",
+        describe: "readonly",
+        it: "readonly",
+        beforeEach: "readonly",
+        jest: "readonly",
+      },
+    },
+  ],
   rules: {
     quotes: "off",
     curly: "off",
