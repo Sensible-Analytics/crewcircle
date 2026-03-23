@@ -1,11 +1,19 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import ScannerScreen from "../screens/ScannerScreen";
 import ContactsScreen from "../screens/ContactsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
+import EditContactScreen from "../screens/EditContactScreen";
 
 const Tab = createBottomTabNavigator();
+
+// Define the parameter list for our contact stack navigator
+type ContactStackParamList = {
+  ContactsList: undefined;
+  EditContact: { contactId: string };
+};
 
 const ScanIcon = ({ color, size }: { color: string; size: number }) => (
   <MaterialCommunityIcons name="scan-helper" color={color} size={size} />
@@ -37,7 +45,23 @@ export const AppNavigator = () => {
       />
       <Tab.Screen
         name="Contacts"
-        component={ContactsScreen}
+        component={() => {
+          const ContactsStack =
+            createNativeStackNavigator<ContactStackParamList>();
+
+          return (
+            <ContactsStack.Navigator screenOptions={{ headerShown: false }}>
+              <ContactsStack.Screen
+                name="ContactsList"
+                component={ContactsScreen}
+              />
+              <ContactsStack.Screen
+                name="EditContact"
+                component={EditContactScreen}
+              />
+            </ContactsStack.Navigator>
+          );
+        }}
         options={{
           tabBarLabel: "Contacts",
           tabBarIcon: ContactsIcon,

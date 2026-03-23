@@ -3,7 +3,7 @@ jest.mock("@react-native-async-storage/async-storage");
 
 // Import the component after mocks are set up
 import React from "react";
-import { render, screen, waitFor, act } from "@testing-library/react-native";
+import { render, screen } from "@testing-library/react-native";
 import SettingsScreen from "./SettingsScreen";
 
 describe("SettingsScreen", () => {
