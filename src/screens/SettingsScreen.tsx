@@ -86,23 +86,35 @@ const SettingsScreen = () => {
   };
 
   return (
-    <View style={Styles.container}>
-      <View style={Styles.header}>
-        <Text style={Styles.headerTitle}>Settings</Text>
+    <View style={Styles.container} testID="settings-screen">
+      <View style={Styles.header} testID="header">
+        <Text style={Styles.headerTitle} testID="header-title">
+          Settings
+        </Text>
       </View>
 
-      <View style={Styles.section}>
-        <Text style={Styles.sectionTitle}>OCR Settings</Text>
+      <View style={Styles.section} testID="ocr-settings-section">
+        <Text style={Styles.sectionTitle} testID="section-title">
+          OCR Settings
+        </Text>
         {availableLanguages.map((lang) => (
-          <View key={lang} style={Styles.languageRow}>
+          <View
+            key={lang}
+            style={Styles.languageRow}
+            testID={`language-row-${lang}`}
+          >
             <TouchableOpacity
               style={[
                 Styles.languageButton,
                 ocrLanguages.includes(lang) ? Styles.selectedLanguage : {},
               ]}
               onPress={() => toggleLanguage(lang)}
+              testID={`language-toggle-${lang}`}
             >
-              <Text style={Styles.languageText}>
+              <Text
+                style={Styles.languageText}
+                testID={`language-text-${lang}`}
+              >
                 {languageNames[lang] || lang}
               </Text>
             </TouchableOpacity>
@@ -110,37 +122,50 @@ const SettingsScreen = () => {
         ))}
       </View>
 
-      <View style={Styles.section}>
-        <Text style={Styles.sectionTitle}>General Settings</Text>
-        <View style={Styles.settingRow}>
-          <Text style={Styles.settingLabel}>Auto-save Contacts</Text>
+      <View style={Styles.section} testID="general-settings-section">
+        <Text style={Styles.sectionTitle} testID="section-title">
+          General Settings
+        </Text>
+        <View style={Styles.settingRow} testID="auto-save-row">
+          <Text style={Styles.settingLabel} testID="setting-label">
+            Auto-save Contacts
+          </Text>
           <Switch
             value={autoSave}
             onValueChange={setAutoSave}
             thumbColor={autoSave ? "#f5dd4b" : "#f4f3f4"}
             trackColor={{ false: "#767577", true: "#81b0ff" }}
+            testID="auto-save-switch"
           />
         </View>
-        <View style={Styles.settingRow}>
-          <Text style={Styles.settingLabel}>Notifications</Text>
+        <View style={Styles.settingRow} testID="notifications-row">
+          <Text style={Styles.settingLabel} testID="setting-label">
+            Notifications
+          </Text>
           <Switch
             value={notificationEnabled}
             onValueChange={setNotificationEnabled}
             thumbColor={notificationEnabled ? "#f5dd4b" : "#f4f3f4"}
             trackColor={{ false: "#767577", true: "#81b0ff" }}
+            testID="notifications-switch"
           />
         </View>
-        <View style={Styles.settingRow}>
-          <Text style={Styles.settingLabel}>Data Usage</Text>
-          <View style={Styles.dataUsageOptions}>
+        <View style={Styles.settingRow} testID="data-usage-row">
+          <Text style={Styles.settingLabel} testID="setting-label">
+            Data Usage
+          </Text>
+          <View style={Styles.dataUsageOptions} testID="data-usage-options">
             <TouchableOpacity
               style={[
                 Styles.dataUsageOption,
                 dataUsage === "wifi-only" ? Styles.selectedDataUsage : {},
               ]}
               onPress={() => setDataUsage("wifi-only")}
+              testID="wifi-only-option"
             >
-              <Text style={Styles.dataUsageText}>Wi-Fi Only</Text>
+              <Text style={Styles.dataUsageText} testID="data-usage-text">
+                Wi-Fi Only
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -148,34 +173,57 @@ const SettingsScreen = () => {
                 dataUsage === "cellular" ? Styles.selectedDataUsage : {},
               ]}
               onPress={() => setDataUsage("cellular")}
+              testID="cellular-option"
             >
-              <Text style={Styles.dataUsageText}>Cellular</Text>
+              <Text style={Styles.dataUsageText} testID="data-usage-text">
+                Cellular
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
 
-      <View style={Styles.section}>
-        <Text style={Styles.sectionTitle}>Data Management</Text>
-        <TouchableOpacity style={Styles.button} onPress={handleExportData}>
+      <View style={Styles.section} testID="data-management-section">
+        <Text style={Styles.sectionTitle} testID="section-title">
+          Data Management
+        </Text>
+        <TouchableOpacity
+          style={Styles.button}
+          onPress={handleExportData}
+          testID="export-data-button"
+        >
           <MaterialCommunityIcons
             name="content-save-all"
             size={20}
             color="#fff"
           />
-          <Text style={Styles.buttonText}>Export Data</Text>
+          <Text style={Styles.buttonText} testID="button-text">
+            Export Data
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={Styles.button} onPress={handleImportData}>
+        <TouchableOpacity
+          style={Styles.button}
+          onPress={handleImportData}
+          testID="import-data-button"
+        >
           <MaterialCommunityIcons
             name="content-duplicate"
             size={20}
             color="#fff"
           />
-          <Text style={Styles.buttonText}>Import Data</Text>
+          <Text style={Styles.buttonText} testID="button-text">
+            Import Data
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={Styles.button} onPress={handleResetApp}>
+        <TouchableOpacity
+          style={Styles.button}
+          onPress={handleResetApp}
+          testID="reset-app-button"
+        >
           <MaterialCommunityIcons name="restart" size={20} color="#fff" />
-          <Text style={Styles.buttonText}>Reset App</Text>
+          <Text style={Styles.buttonText} testID="button-text">
+            Reset App
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

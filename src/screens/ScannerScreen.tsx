@@ -222,10 +222,10 @@ const ScannerScreen = () => {
   }
 
   return (
-    <View style={Styles.container}>
+    <View style={Styles.container} testID="main-view">
       {!showResults ? (
         // Camera view
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1 }} testID="camera-view">
           {/* @ts-ignore: Property 'device' is missing in type '{ ref: MutableRefObject<any>; style: AbsoluteFillStyle; isActive: true; }' but required in type 'Readonly<CameraProps>.' */}
           <Camera
             ref={cameraRef}
@@ -242,6 +242,7 @@ const ScannerScreen = () => {
             style={Styles.captureButton}
             onPress={handleCapture}
             disabled={isProcessing}
+            testID="capture-button"
           >
             {isProcessing ? (
               <ActivityIndicator size="small" color="#fff" />
@@ -252,7 +253,7 @@ const ScannerScreen = () => {
         </View>
       ) : (
         // Results view
-        <View style={Styles.resultsContainer}>
+        <View style={Styles.resultsContainer} testID="results-view">
           {capturedImage !== null ? (
             <Image
               source={{ uri: capturedImage }}
@@ -261,7 +262,9 @@ const ScannerScreen = () => {
           ) : null}
 
           <Text style={Styles.resultsTitle}>Extracted Information</Text>
-          <Text style={Styles.resultsText}>{extractedText}</Text>
+          <Text style={Styles.resultsText} testID="extracted-text">
+            {extractedText}
+          </Text>
 
           <View style={Styles.contactInfoContainer}>
             <Text style={Styles.contactInfoLabel}>Name:</Text>
@@ -291,12 +294,20 @@ const ScannerScreen = () => {
           </View>
 
           <View style={Styles.buttonContainer}>
-            <TouchableOpacity style={Styles.button} onPress={handleRetake}>
+            <TouchableOpacity
+              style={Styles.button}
+              onPress={handleRetake}
+              testID="retake-button"
+            >
               <MaterialCommunityIcons name="repeat" size={20} color="#fff" />
               <Text style={Styles.buttonText}>Retake</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={Styles.button} onPress={handleSaveContact}>
+            <TouchableOpacity
+              style={Styles.button}
+              onPress={handleSaveContact}
+              testID="save-contact-button"
+            >
               <MaterialCommunityIcons
                 name="content-save"
                 size={20}
@@ -308,6 +319,7 @@ const ScannerScreen = () => {
             <TouchableOpacity
               style={Styles.button}
               onPress={handleExportContact}
+              testID="export-contact-button"
             >
               <MaterialCommunityIcons
                 name="share-variant"

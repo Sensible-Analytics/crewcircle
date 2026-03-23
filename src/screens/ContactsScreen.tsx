@@ -51,11 +51,11 @@ const ContactsScreen = () => {
       [
         {
           text: "Cancel",
-          style: "cancel",
+          style: "cancel" as const,
         },
         {
           text: "Delete",
-          style: "destructive",
+          style: "destructive" as const,
           onPress: async () => {
             await storageUtils.deleteContact(id);
             loadContacts();
@@ -96,6 +96,7 @@ const ContactsScreen = () => {
         onPress={() =>
           navigation.navigate("EditContact", { contactId: item.id })
         }
+        testID={`contact-item-${item.id}`}
       >
         <View style={Styles.contactInfo}>
           <Text style={Styles.contactName}>{item.name}</Text>
@@ -121,6 +122,7 @@ const ContactsScreen = () => {
             e.stopPropagation();
             handleDeleteContact(item.id);
           }}
+          testID={`delete-button-${item.id}`}
         >
           <MaterialCommunityIcons name="delete" size={20} color="#fff" />
         </TouchableOpacity>
@@ -145,17 +147,24 @@ const ContactsScreen = () => {
   }
 
   return (
-    <View style={Styles.container}>
+    <View style={Styles.container} testID="contacts-screen">
       <View style={Styles.header}>
-        <Text style={Styles.headerTitle}>My Contacts</Text>
+        <Text style={Styles.headerTitle} testID="header-title">
+          My Contacts
+        </Text>
         <View style={Styles.headerActions}>
           <TouchableOpacity
             style={Styles.headerButton}
             onPress={handleExportAllContacts}
+            testID="export-all-contacts-button"
           >
             <MaterialCommunityIcons name="file-export" size={20} color="#fff" />
           </TouchableOpacity>
-          <TouchableOpacity style={Styles.headerButton} onPress={() => {}}>
+          <TouchableOpacity
+            style={Styles.headerButton}
+            onPress={() => {}}
+            testID="add-contact-button"
+          >
             <MaterialCommunityIcons name="plus" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -168,18 +177,23 @@ const ContactsScreen = () => {
         ItemSeparatorComponent={Separator}
         contentContainerStyle={Styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            testID="refresh-control"
+          />
         }
+        testID="contacts-list"
       />
 
       {contacts.length === 0 && (
-        <View style={Styles.emptyState}>
+        <View style={Styles.emptyState} testID="empty-state-view">
           <MaterialCommunityIcons
             name="account-multiple"
             size={48}
             color="#ccc"
           />
-          <Text style={Styles.emptyText}>
+          <Text style={Styles.emptyText} testID="empty-state-text">
             No contacts yet. Scan a business card to get started!
           </Text>
         </View>

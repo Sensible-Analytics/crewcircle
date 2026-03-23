@@ -123,87 +123,117 @@ const EditContactScreen = ({ route, navigation }: any) => {
   }
 
   return (
-    <KeyboardAvoidingView behavior="padding" style={Styles.container}>
-      <View style={Styles.header}>
+    <KeyboardAvoidingView
+      behavior="padding"
+      style={Styles.container}
+      testID="edit-contact-screen"
+    >
+      <View style={Styles.header} testID="header">
         <TouchableOpacity
           style={Styles.backButton}
           onPress={() => navigation.goBack()}
+          testID="back-button"
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={Styles.headerTitle}>Edit Contact</Text>
+        <Text style={Styles.headerTitle} testID="header-title">
+          Edit Contact
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView
         contentContainerStyle={Styles.formContainer}
         keyboardShouldPersistTaps="handled"
+        testID="form-scrollview"
       >
-        <View style={Styles.inputGroup}>
-          <Text style={Styles.inputLabel}>Name</Text>
+        <View style={Styles.inputGroup} testID="name-input-group">
+          <Text style={Styles.inputLabel} testID="name-label">
+            Name
+          </Text>
           <TextInput
             style={Styles.input}
             value={name}
             onChangeText={setName}
             placeholder="Enter name"
             autoFocus
+            testID="name-input"
           />
         </View>
 
-        <View style={Styles.inputGroup}>
-          <Text style={Styles.inputLabel}>Email</Text>
+        <View style={Styles.inputGroup} testID="email-input-group">
+          <Text style={Styles.inputLabel} testID="email-label">
+            Email
+          </Text>
           <TextInput
             style={Styles.input}
             value={email}
             onChangeText={setEmail}
             placeholder="Enter email"
             keyboardType="email-address"
+            testID="email-input"
           />
         </View>
 
-        <View style={Styles.inputGroup}>
-          <Text style={Styles.inputLabel}>Phone</Text>
+        <View style={Styles.inputGroup} testID="phone-input-group">
+          <Text style={Styles.inputLabel} testID="phone-label">
+            Phone
+          </Text>
           <TextInput
             style={Styles.input}
             value={phone}
             onChangeText={setPhone}
             placeholder="Enter phone number"
             keyboardType="phone-pad"
+            testID="phone-input"
           />
         </View>
 
-        <View style={Styles.inputGroup}>
-          <Text style={Styles.inputLabel}>Company</Text>
+        <View style={Styles.inputGroup} testID="company-input-group">
+          <Text style={Styles.inputLabel} testID="company-label">
+            Company
+          </Text>
           <TextInput
             style={Styles.input}
             value={company}
             onChangeText={setCompany}
             placeholder="Enter company"
+            testID="company-input"
           />
         </View>
 
-        <View style={Styles.inputGroup}>
-          <Text style={Styles.inputLabel}>Address (Optional)</Text>
+        <View style={Styles.inputGroup} testID="address-input-group">
+          <Text style={Styles.inputLabel} testID="address-label">
+            Address (Optional)
+          </Text>
           <TextInput
             style={Styles.input}
             value={address}
             onChangeText={setAddress}
             placeholder="Enter address"
+            testID="address-input"
           />
         </View>
 
-        <View style={Styles.inputGroup}>
-          <Text style={Styles.inputLabel}>Website (Optional)</Text>
+        <View style={Styles.inputGroup} testID="website-input-group">
+          <Text style={Styles.inputLabel} testID="website-label">
+            Website (Optional)
+          </Text>
           <TextInput
             style={Styles.input}
             value={website}
             onChangeText={setWebsite}
             placeholder="Enter website"
+            testID="website-input"
           />
         </View>
 
-        <View style={Styles.buttonContainer}>
-          <TouchableOpacity style={Styles.button} onPress={handleSaveContact}>
+        <View style={Styles.buttonContainer} testID="button-container">
+          <TouchableOpacity
+            style={Styles.button}
+            onPress={handleSaveContact}
+            testID="save-button"
+          >
             <MaterialCommunityIcons
               name="content-save"
               size={20}
@@ -215,6 +245,7 @@ const EditContactScreen = ({ route, navigation }: any) => {
           <TouchableOpacity
             style={Styles.buttonDelete}
             onPress={handleDeleteContact}
+            testID="delete-button"
           >
             <MaterialCommunityIcons name="delete" size={20} color="#fff" />
             <Text style={Styles.buttonText}>Delete Contact</Text>

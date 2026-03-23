@@ -8,9 +8,13 @@
     "lint": "eslint .",
     "start": "react-native start",
     "test": "jest",
+    "test:ci": "npm test -- --watchAll=false",
     "build:android": "cd android && ./gradlew assembleDebug",
     "build:ios": "xcodebuild -workspace ios/CardScannerApp.xcworkspace -scheme CardScannerApp -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 14,OS=latest' clean build",
-    "test:ci": "npm test -- --watchAll=false"
+    "detox:test": "detox test -c ios.sim",
+    "detox:test:android": "detox test -c android.emu",
+    "detox:build:ios": "detox build -c ios.sim",
+    "detox:build:android": "detox build -c android.emu"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.1.2",
@@ -36,9 +40,13 @@
     "@react-native/eslint-config": "0.74.81",
     "@react-native/metro-config": "0.74.81",
     "@react-native/typescript-config": "0.74.81",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^30.0.0",
     "@types/react": "^18.2.6",
     "@types/react-test-renderer": "^18.0.0",
     "babel-jest": "^29.6.3",
+    "detox": "^20.48.1",
     "eslint": "^8.19.0",
     "jest": "^29.6.3",
     "prettier": "2.8.8",
