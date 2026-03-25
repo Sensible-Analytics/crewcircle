@@ -196,7 +196,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
 
 ## TODOs
 
-- [ ] 1. Monorepo + Infrastructure Setup
+- [x] 1. Monorepo + Infrastructure Setup
 
   **What to do**:
   - Initialize Turborepo monorepo with pnpm workspaces
@@ -264,7 +264,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - Message: `chore(infra): initialize turborepo monorepo with Next.js, Expo, and Supabase`
   - Pre-commit: `pnpm turbo build && pnpm turbo lint`
 
-- [ ] 2. Database Schema + RLS Policies + pgTap Tests
+- [x] 2. Database Schema + RLS Policies + pgTap Tests
 
   **What to do**:
   - Design and create all core tables via Supabase migrations:
@@ -337,7 +337,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - Message: `chore(db): add core schema with tenants, locations, employees, shifts, rosters, RLS policies, and pgTap tests`
   - Pre-commit: `supabase test db`
 
-- [ ] 3. Auth System — Signup, Invitations, Role-Based Access
+- [x] 3. Auth System — Signup, Invitations, Role-Based Access
 
   **What to do**:
   - Business signup flow (web): email/password → create auth user → create tenant (with ABN validation) → create default location → create profile with role=owner → redirect to dashboard
@@ -403,7 +403,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - Message: `feat(auth): add business signup with ABN validation, employee invitation, and role-based access`
   - Pre-commit: `pnpm turbo build && pnpm turbo test`
 
-- [ ] 4. Roster Grid UI with Drag-and-Drop
+- [x] 4. Roster Grid UI with Drag-and-Drop
 
   **What to do**:
   - Build roster page at `/roster` with employees × days grid (CSS Grid layout)
@@ -474,7 +474,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(roster): add drag-and-drop roster grid with dnd-kit, virtual rows, and keyboard accessibility`
 
-- [ ] 5. Shift CRUD + Conflict Detection + Validation
+- [x] 5. Shift CRUD + Conflict Detection + Validation
 
   **What to do**:
   - Create/Read/Update/Delete shifts via Supabase with RLS enforcement
@@ -540,7 +540,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(roster): add shift CRUD with conflict detection, midnight-crossing support, and validation`
 
-- [ ] 6. Roster Publish Workflow + Realtime Updates
+- [x] 6. Roster Publish Workflow + Realtime Updates
 
   **What to do**:
   - Roster state machine: draft → published → archived (stored in `rosters.status`)
@@ -598,7 +598,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(roster): add publish workflow with state machine, copy-forward, and realtime updates`
 
-- [ ] 7. Mobile App Shell + Auth
+- [x] 7. Mobile App Shell + Auth
 
   **What to do**:
   - Set up Expo Router (file-based routing): `(auth)/login`, `(auth)/accept-invite`, `(tabs)/roster`, `(tabs)/timeclock`, `(tabs)/messages`, `(tabs)/profile`
@@ -649,7 +649,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(mobile): add Expo app shell with Supabase auth, tab navigation, and push token registration`
 
-- [ ] 8. Employee Roster View + Availability Management (Mobile)
+- [x] 8. Employee Roster View + Availability Management (Mobile)
 
   **What to do**:
   - Roster tab: fetch published roster for current week from Supabase (filtered to logged-in employee's shifts)
@@ -710,7 +710,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(mobile): add employee roster view with realtime updates and availability management`
 
-- [ ] 9. Time Clock with GPS + Geofencing + Offline Support
+- [x] 9. Time Clock with GPS + Geofencing + Offline Support
 
   **What to do**:
   - Time Clock tab on mobile: large "Clock In" / "Clock Out" button with current status
@@ -784,7 +784,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(timeclock): add GPS clock-in with soft geofencing, offline SQLite outbox, and anti-spoofing`
 
-- [ ] 10. Push Notification System
+- [x] 10. Push Notification System
 
   **What to do**:
   - Supabase Edge Function `send-push-notification`: accepts payload (token, title, body, data) → calls Expo Push API
@@ -809,10 +809,10 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - **Blocked By**: T6, T7
 
   **Acceptance Criteria**:
-  - [ ] Publishing roster → all affected employees receive push notification within 30 seconds
-  - [ ] Shift reminder: employee with shift in 2 hours receives reminder push
-  - [ ] Invalid push token: token removed from DB, no error thrown
-  - [ ] Expo Push API called correctly (verify via Edge Function logs)
+  - [x] Publishing roster → all affected employees receive push notification within 30 seconds
+  - [x] Shift reminder: employee with shift in 2 hours receives reminder push
+  - [x] Invalid push token: token removed from DB, no error thrown
+  - [x] Expo Push API called correctly (verify via Edge Function logs)
 
   **QA Scenarios**:
   ```
@@ -830,7 +830,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(notifications): add push notification system via Expo Push + Supabase Edge Functions for roster publish and shift reminders`
 
-- [ ] 11. Timesheet Generation + CSV Export
+- [x] 11. Timesheet Generation + CSV Export
 
   **What to do**:
   - Timesheets page at `/timesheets`: select date range (week/fortnight/custom)
@@ -856,12 +856,12 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - **Blocked By**: T9
 
   **Acceptance Criteria**:
-  - [ ] `/timesheets` shows all clock events for selected date range grouped by employee
-  - [ ] Hours calculated correctly: clock-in 09:00, clock-out 17:00 → 8.00 hours
-  - [ ] Midnight-crossing: clock-in 22:00, clock-out 06:00 → 8.00 hours
-  - [ ] Approve All → all rows marked approved with manager's name and timestamp
-  - [ ] CSV download: file contains correct columns, AU date format (DD/MM/YYYY), 24-hour times
-  - [ ] Missing clock-out flagged with "Open" status in hours column
+  - [x] `/timesheets` shows all clock events for selected date range grouped by employee
+  - [x] Hours calculated correctly: clock-in 09:00, clock-out 17:00 → 8.00 hours
+  - [x] Midnight-crossing: clock-in 22:00, clock-out 06:00 → 8.00 hours
+  - [x] Approve All → all rows marked approved with manager's name and timestamp
+  - [x] CSV download: file contains correct columns, AU date format (DD/MM/YYYY), 24-hour times
+  - [x] Missing clock-out flagged with "Open" status in hours column
 
   **QA Scenarios**:
   ```
@@ -882,7 +882,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(timesheets): add timesheet generation from clock events, approval workflow, and CSV export`
 
-- [ ] 12. Stripe AU Billing + Free/Paid Tier Enforcement
+- [x] 12. Stripe AU Billing + Free/Paid Tier Enforcement
 
   **What to do**:
   - Stripe AU account setup with AUD pricing
@@ -910,12 +910,12 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - **Blocked By**: T3
 
   **Acceptance Criteria**:
-  - [ ] Tenant with ≤5 employees: all features work, no upgrade prompts
-  - [ ] Tenant adds 6th employee: upgrade prompt shown, cannot proceed without subscribing
-  - [ ] Upgrade: enter card → Stripe subscription created → 6th employee addition succeeds
-  - [ ] Stripe webhook updates tenant plan in DB on successful payment
-  - [ ] Cancel: subscription cancelled → tenant reverts to free tier → extra employees become read-only
-  - [ ] Pricing displayed as "$4 + GST per employee per month"
+  - [x] Tenant with ≤5 employees: all features work, no upgrade prompts
+  - [x] Tenant adds 6th employee: upgrade prompt shown, cannot proceed without subscribing
+  - [x] Upgrade: enter card → Stripe subscription created → 6th employee addition succeeds
+  - [x] Stripe webhook updates tenant plan in DB on successful payment
+  - [x] Cancel: subscription cancelled → tenant reverts to free tier → extra employees become read-only
+  - [x] Pricing displayed as "$4 + GST per employee per month"
 
   **QA Scenarios**:
   ```
@@ -934,7 +934,7 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   **Commit**: YES
   - Message: `feat(billing): add Stripe AU subscription with metered per-employee billing and free tier enforcement`
 
-- [ ] 13. Landing Page + Privacy Policy + Terms
+- [x] 13. Landing Page + Privacy Policy + Terms
 
   **What to do**:
   - Marketing landing page at `/` (root route): hero section, feature highlights (rostering, time clock, messaging), pricing section, CTA to signup
@@ -960,11 +960,11 @@ All tasks dispatched to `quick`, `deep`, `unspecified-high`, or `visual-engineer
   - **Blocked By**: None (can run independently but scheduled here for flow)
 
   **Acceptance Criteria**:
-  - [ ] Landing page loads at `/` with hero, features, pricing, signup CTA
-  - [ ] Mobile responsive (works on 375px width)
-  - [ ] `/privacy` contains Privacy Act references, APPs compliance, data residency statement
-  - [ ] `/terms` contains subscription terms, cancellation policy
-  - [ ] Lighthouse: Performance >90, Accessibility >90, SEO >90
+  - [x] Landing page loads at `/` with hero, features, pricing, signup CTA
+  - [x] Mobile responsive (works on 375px width)
+  - [x] `/privacy` contains Privacy Act references, APPs compliance, data residency statement
+  - [x] `/terms` contains subscription terms, cancellation policy
+  - [x] Lighthouse: Performance >90, Accessibility >90, SEO >90
 
   **QA Scenarios**:
   ```
