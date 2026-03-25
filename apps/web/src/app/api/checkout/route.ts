@@ -1,14 +1,17 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createServerSupabaseClient } from '@/packages/supabase/src/client.server'; // Assuming this exists or I'll create it
+import { createSupabaseServerClient } from '@/packages/supabase/src/client.server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2026-02-25.clover',
 });
 
 export async function POST(req: Request) {
   try {
     const { tenantId, email } = await req.json();
+    
+    // Initialize Supabase client
+    const supabase = await createSupabaseServerClient();
     
     // Create checkout session
     const session = await stripe.checkout.sessions.create({

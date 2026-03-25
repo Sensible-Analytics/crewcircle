@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient, createSupabaseAdminClient } from '@/packages/supabase/src/client.server';
+import { createSupabaseServerClient } from '@/packages/supabase/src/client.server';
+import { createSupabaseAdminClient } from '@/packages/supabase/src/client.admin';
 
 export async function POST(request: Request) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const adminSupabase = createSupabaseAdminClient();
     const { email, role } = await request.json();
 
@@ -16,9 +17,10 @@ export async function POST(request: Request) {
     }
 
     // Check if user is authenticated
+    const supabaseClient = await supabase;
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabaseClient.auth.getUser();
 
     if (!user) {
       return NextResponse.json(
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
     }
 
     // Get the user's profile to verify they are owner/manager and get tenant_id
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
       .select('tenant_id, role')
       .eq('id', user.id)

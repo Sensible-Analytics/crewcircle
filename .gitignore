@@ -34,3 +34,5 @@ supabase/supabase/.temp/
 
 # Turbo
 .turbo
+.vercel
+.env*.local

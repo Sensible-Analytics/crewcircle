@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { detectConflicts } from '../src/conflicts';
-import { Shift, Profile } from '@/types';
+import type { Shift, Profile } from '../src/types';
 
 // Mock data for testing
 const mockProfileId = '11111111-1111-1111-1111-111111111111';

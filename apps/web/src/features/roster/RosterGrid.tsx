@@ -9,6 +9,9 @@ import {
   KeyboardSensor,
   defaultCoordinates,
   DragOverlay,
+  type DragStartEvent,
+  type DragOverEvent,
+  type DragEndEvent,
 } from '@dnd-kit/core';
 import { 
   SortableContext, 
@@ -196,11 +199,10 @@ const RosterGrid: React.FC = () => {
     const profiles: Profile[] = store.profiles;
     const shifts: Shift[] = store.shifts;
     const setShifts = store.setShifts;
-    // @ts-expect-error - Supabase client type mismatch with zustand store
-    const selectedWeekStart: string = store.selectedWeekStart;
+     const selectedWeekStart: string = store.selectedWeekStart;
     const setSelectedWeekStart = store.setSelectedWeekStart;
     const loading: boolean = store.loading;
-    const roster: Roster | null = store.roster;
+    let roster: Roster | null = store.roster;
     const publishRoster: () => Promise<boolean> = store.publishRoster;
    const unpublishRoster: () => Promise<boolean> = store.unpublishRoster;
    const copyForwardRoster: () => Promise<boolean> = store.copyForwardRoster;
@@ -231,32 +233,30 @@ const RosterGrid: React.FC = () => {
   const isReadOnly = roster?.status === 'published';
 
    // Handle drag start
-   const handleDragStart = (event: { active: { id: string } }) => {
-     if (isReadOnly) return; // Disable drag when published
-     setActiveId(event.active.id);
+   const handleDragStart = (event: DragStartEvent) => {
+     if (isReadOnly) return;
+     setActiveId(String(event.active.id));
    };
 
-   // Handle drag over
-   const handleDragOver = (event: { active: { id: string }; over: { id: string } | null }) => {
+   const handleDragOver = (event: DragOverEvent) => {
      const { active, over } = event;
-     if (active.id === over?.id) return;
-     
-     // We'll handle the reordering in drag end for simplicity
+     if (String(active.id) === String(over?.id)) return;
    };
 
-   // Handle drag end
-   const handleDragEnd = (event: { active: { id: string }; over: { id: string } | null }) => {
-     if (isReadOnly) return; // Disable drag when published
+   const handleDragEnd = (event: DragEndEvent) => {
+     if (isReadOnly) return;
      
      const { active, over } = event;
      
-     // If we dropped on a different cell, we need to update the shift
-    if (over && active.id !== over.id) {
+      // If we dropped on a different cell, we need to update the shift
+      if (over && String(active.id) !== String(over.id)) {
       // Parse the active and over IDs to get employee and day
       // ID format: shift-{shiftId} or cell-{employeeId}-{dayIndex}
-      if (active.id.startsWith('shift-') && over.id.startsWith('cell-')) {
-        const shiftId = active.id.split('-')[1];
-        const [, employeeId, dayIndexStr] = over.id.split('-');
+      const activeIdStr = String(active.id);
+      const overIdStr = String(over.id);
+      if (activeIdStr.startsWith('shift-') && overIdStr.startsWith('cell-')) {
+        const shiftId = activeIdStr.split('-')[1];
+        const [, employeeId, dayIndexStr] = overIdStr.split('-');
         const dayIndex = parseInt(dayIndexStr, 10);
         
         // Find the shift
@@ -460,7 +460,7 @@ const RosterGrid: React.FC = () => {
         const supabase = createBrowserSupabaseClient();
 
         // Get or create a draft roster for the current week and tenant
-        const { data: roster, error: rosterError } = await supabase
+        let { data: roster, error: rosterError } = await supabase
           .from('rosters')
           .select('id')
           .eq('tenant_id', tenantId)

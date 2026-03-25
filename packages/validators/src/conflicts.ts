@@ -1,5 +1,4 @@
-import { Shift } from '@/types/shift';
-import { Profile } from '@/types/profile';
+import type { Shift, Profile } from './types';
 
 // Types for availability and weekly hours
 export interface Availability {

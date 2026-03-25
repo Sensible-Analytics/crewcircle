@@ -272,13 +272,22 @@ export const useRosterStore = create<RosterState>()(
         const supabase = createBrowserSupabaseClient();
         
         // Get or create a draft roster for the current week and tenant
-        const { data: roster, error: rosterError } = await supabase
-          .from('rosters')
-          .select('*')
-          .eq('tenant_id', tenantId)
-          .eq('week_start', weekStart)
-          .eq('status', 'draft')
-          .single();
+        let roster: any;
+        let rosterError: any;
+        
+        try {
+          const result = await supabase
+            .from('rosters')
+            .select('*')
+            .eq('tenant_id', tenantId)
+            .eq('week_start', weekStart)
+            .eq('status', 'draft')
+            .single();
+          roster = result.data;
+          rosterError = result.error;
+        } catch (e) {
+          rosterError = e;
+        }
 
         if (rosterError && rosterError.code === 'PGRST116') {
           // No roster found, create one
@@ -295,7 +304,7 @@ export const useRosterStore = create<RosterState>()(
             .select();
 
           if (insertError) throw insertError;
-          roster = newRoster[0];
+          roster = newRoster?.[0];
         } else if (rosterError) {
           throw rosterError;
         }
