@@ -1,6 +1,3 @@
-# CrewCircle Phase 1 MVP
-
-## Overview
 CrewCircle is a comprehensive workforce management solution designed for Australian businesses.
 
 ## Features
