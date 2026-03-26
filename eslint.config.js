@@ -78,6 +78,17 @@ export default [
     },
   },
   {
+    files: ['jest.setup.cjs', 'jest.config.cjs'],
+    languageOptions: {
+      globals: {
+        ...globals.jest,
+      },
+    },
+    rules: {
+      'no-undef': 'off',
+    },
+  },
+  {
     ignores: [
       'node_modules/',
       'android/build/',
