@@ -28,7 +28,6 @@
     "expo"
   ],
   "workspaces": [
-    "packages/*",
     "apps/web"
   ],
   "scripts": {
