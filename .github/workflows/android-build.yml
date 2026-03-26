@@ -39,14 +39,26 @@ jobs:
       - name: Run tests
         run: npm run test:ci
 
-      - name: Build Android APK
+      - name: Build Android Debug APK
         run: |
           cd android
           ./gradlew assembleDebug
-          cp app/build/outputs/apk/debug/app-debug.apk ../app-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk ../CardScanner-debug-android.apk
 
-      - name: Upload Android artifact
+      - name: Build Android Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../CardScanner-release-android.apk
+
+      - name: Upload Android Debug Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apk
-          path: app-debug.apk
+          name: android-debug-apk
+          path: CardScanner-debug-android.apk
+
+      - name: Upload Android Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-apk
+          path: CardScanner-release-android.apk

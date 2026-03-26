@@ -20,7 +20,7 @@ jest.mock("@react-navigation/native", () => ({
 
 jest.mock("../src/navigation/AppNavigator", () => ({
   AppNavigator: () => {
-    const { View } = require("react-native");
+    const { View } = await import("react-native");
     return <View testID="app-navigator" />;
   },
 }));

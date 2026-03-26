@@ -32,7 +32,7 @@ Thank you for considering contributing to CardScannerApp! Please read this guide
 
 ### Prerequisites
 
-- Node.js v14 or later
+- Node.js v18 or later
 - npm or yarn
 - Xcode (for iOS)
 - Android Studio (for Android)
@@ -41,11 +41,82 @@ Thank you for considering contributing to CardScannerApp! Please read this guide
 ### Installation
 
 ```bash
-git clone https://github.com/your-username/CardScannerApp.git
+git clone https://github.com/Sensible-Analytics/CardScannerApp.git
 cd CardScannerApp
 npm install
 cd ios && pod install && cd ..
 ```
+
+## Release Process
+
+### Versioning
+
+We use Semantic Versioning (MAJOR.MINOR.PATCH):
+- **MAJOR**: Incompatible API changes or major redesigns
+- **MINOR**: New features in backward-compatible manner
+- **PATCH**: Bug fixes and minor improvements
+
+### Release Workflow
+
+1. **Update Version Numbers**
+   - Update `package.json` version
+   - Update `app.json` version
+   - Update `ios/` and `android/` version if needed
+
+2. **Prepare Release Notes**
+   - Document changes in release notes
+   - Update CHANGELOG.md if maintained
+
+3. **Generate Release Artifacts**
+   ```bash
+   # Build iOS release (requires Xcode)
+   npm run release:ios
+   
+   # Build Android release
+   npm run release:android
+   
+   # Verify artifacts
+   npm run release:verify
+   ```
+
+4. **Create Git Tag and Release**
+   ```bash
+   git tag -a v1.0.0 -m "Version 1.0.0"
+   git push origin v1.0.0
+   ```
+
+5. **Submit to App Stores**
+   - Upload to App Store Connect (iOS)
+   - Upload to Google Play Console (Android)
+   - Complete store listings
+   - Submit for review
+
+### Store Listing Preparation
+
+See `app-store-listing.md` for detailed store listing requirements and guidelines.
+
+Required assets:
+- Screenshots for all required device sizes
+- App icons in various sizes
+- Privacy policy URL
+- Store descriptions and keywords
+- Feature graphics
+
+Assets should be placed in the `store-assets/` directory structure.
+
+### CI/CD Release Pipeline
+
+Our CI/CD pipeline includes:
+- **CI Workflow**: Runs tests on every push and pull request
+- **Android Build**: Builds and tests Android app
+- **iOS Build**: Builds and tests iOS app
+- **Release Workflow**: Creates GitHub releases with artifacts when tags are pushed
+
+To trigger a release:
+1. Ensure all tests pass on main branch
+2. Create and push a version tag: `git tag -a v1.0.0 -m "Version 1.0.0"`
+3. Push tag: `git push origin v1.0.0`
+4. GitHub Actions will automatically build and create a release
 
 ### Running Tests
 

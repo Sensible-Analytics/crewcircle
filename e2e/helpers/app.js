@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /* global by, device, element, waitFor */
 const { execSync } = require("child_process");
 

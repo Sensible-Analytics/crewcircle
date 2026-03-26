@@ -1,4 +1,17 @@
 {
   "name": "CardScannerApp",
-  "displayName": "CardScannerApp"
+  "displayName": "CardScanner",
+  "version": "1.0.0",
+  "description": "Professional business card scanner with OCR-powered text extraction",
+  "privacy": "camera-only",
+  "categories": ["business", "productivity"],
+  "icons": {
+    "ios": "assets/icon.png",
+    "android": "assets/icon.png"
+  },
+  "splash": {
+    "image": "assets/splash.png",
+    "resizeMode": "contain",
+    "backgroundColor": "#ffffff"
+  }
 }

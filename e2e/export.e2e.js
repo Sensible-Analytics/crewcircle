@@ -1,5 +1,3 @@
-/* global by, element, waitFor */
-
 const {
   launchCleanApp,
   openContactsTab,

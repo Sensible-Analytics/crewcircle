@@ -1,5 +1,3 @@
-/* global by, element, waitFor, device, expect */
-
 const { waitForVisible, tapAlertButton } = require("./helpers/app");
 
 describe("Permission Handling", () => {

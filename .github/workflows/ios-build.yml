@@ -38,12 +38,30 @@ jobs:
       - name: Run tests
         run: npm run test:ci
 
-      - name: Build iOS app
+      - name: Build iOS Debug (Simulator)
         run: |
           xcodebuild -workspace ios/CardScannerApp.xcworkspace -scheme CardScannerApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' clean build
+          mkdir -p build
+          cp -r ios/build/Debug-iphonesimulator/CardScannerApp.app build/CardScanner-debug-ios.app
 
-      - name: Upload iOS artifact
+      - name: Upload iOS Debug Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ios-app
-          path: ios/build/Debug-iphonesimulator/CardScannerApp.app
+          name:-ios-debug-app
+          path: build/CardScanner-debug-ios.app
+
+      # Note: iOS release builds require proper code signing certificates and provisioning profiles
+      # This is typically handled by Fastlane or manual setup in a proper build environment
+      - name: Build iOS Release (Archive)
+        if: false  # Disabled - requires code signing setup
+        run: |
+          xcodebuild -workspace ios/CardScannerApp.xcworkspace -scheme CardScannerApp -configuration Release -sdk iphoneos -archivePath build/CardScannerApp.xcarchive archive
+          xcodebuild -exportArchive -archivePath build/CardScannerApp.xcarchive -exportOptionsPlist ios/ExportOptions.plist -exportPath build
+          cp build/CardScannerApp.ipa CardScanner-release-ios.ipa
+
+      - name: Upload iOS Release Artifact
+        if: false  # Disabled - requires code signing setup
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa
+          path: CardScanner-release-ios.ipa

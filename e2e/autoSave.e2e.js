@@ -1,5 +1,3 @@
-/* global by, element, waitFor, expect */
-
 const {
   launchCleanApp,
   openScanTab,

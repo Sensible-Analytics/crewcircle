@@ -1,5 +1,3 @@
-/* global by, element */
-
 const {
   launchCleanApp,
   openContactsTab,
