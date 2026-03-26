@@ -47,6 +47,7 @@ export default [
         ...globals.jest,
         ...globals.node,
         ...globals.browser,
+        __DEV__: 'readonly',
       },
     },
     plugins: {

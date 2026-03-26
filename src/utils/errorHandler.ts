@@ -1,6 +1,11 @@
 import { Alert } from "react-native";
 
-export const handleError = (error: any, context: string = "") => {
+interface ErrorWithCode {
+  code?: string;
+  message?: string;
+}
+
+export const handleError = (error: ErrorWithCode, context: string = "") => {
   console.error(`Error in ${context}:`, error);
 
   if (error.code) {
@@ -14,7 +19,7 @@ export const handleError = (error: any, context: string = "") => {
   return "An unexpected error occurred";
 };
 
-export const showErrorAlert = (error: any, context: string = "") => {
+export const showErrorAlert = (error: ErrorWithCode, context: string = "") => {
   const message = handleError(error, context);
   Alert.alert("Error", message);
 };

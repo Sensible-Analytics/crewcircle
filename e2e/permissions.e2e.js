@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 const { waitForVisible, tapAlertButton } = require("./helpers/app");
 
 describe("Permission Handling", () => {

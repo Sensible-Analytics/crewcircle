@@ -16,14 +16,12 @@ import { showErrorAlert } from "../utils/errorHandler";
 const mockNavigate = jest.fn();
 
 jest.mock("@react-navigation/native", () => {
-  const ReactModule = require("react");
-
   return {
     useNavigation: () => ({
       navigate: mockNavigate,
     }),
     useFocusEffect: (callback: () => void | (() => void)) => {
-      ReactModule.useEffect(() => {
+      React.useEffect(() => {
         const cleanup = callback();
         return cleanup;
       }, [callback]);

@@ -1,22 +1,19 @@
+import { Alert } from "react-native";
 import { handleError, showErrorAlert } from "../src/utils/errorHandler";
 
-// Mock Alert from react-native
 jest.mock("react-native", () => ({
   Alert: {
     alert: jest.fn(),
   },
 }));
 
-describe("errorHandler", () => {
-  let alertMock: jest.Mock;
+const mockedAlert = Alert.alert as jest.Mock;
 
+describe("errorHandler", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Mock console.error to prevent output during tests
     jest.spyOn(console, "error").mockImplementation(() => {});
-    // Get the mock alert function
-    alertMock = require("react-native").Alert.alert as jest.Mock;
-    alertMock.mockClear();
+    mockedAlert.mockClear();
   });
 
   afterEach(() => {
@@ -63,7 +60,7 @@ describe("errorHandler", () => {
       const error = { code: "ERR_TEST", message: "Test error" };
       showErrorAlert(error, "testContext");
 
-      expect(alertMock).toHaveBeenCalledWith(
+      expect(mockedAlert).toHaveBeenCalledWith(
         "Error",
         "Error ERR_TEST: Test error"
       );
@@ -73,14 +70,14 @@ describe("errorHandler", () => {
       const error = { message: "Test error message" };
       showErrorAlert(error, "testContext");
 
-      expect(alertMock).toHaveBeenCalledWith("Error", "Test error message");
+      expect(mockedAlert).toHaveBeenCalledWith("Error", "Test error message");
     });
 
     it("should call Alert.alert with generic message when no error details", () => {
       const error = {};
       showErrorAlert(error, "testContext");
 
-      expect(alertMock).toHaveBeenCalledWith(
+      expect(mockedAlert).toHaveBeenCalledWith(
         "Error",
         "An unexpected error occurred"
       );

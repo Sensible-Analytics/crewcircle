@@ -6,6 +6,8 @@ jest.mock("../utils/storage");
 import React from "react";
 import { render, screen, waitFor } from "@testing-library/react-native";
 import SettingsScreen from "./SettingsScreen";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import storageUtils from "../utils/storage";
 
 describe("SettingsScreen", () => {
   // Set up default mocks before each test
@@ -13,27 +15,21 @@ describe("SettingsScreen", () => {
     jest.clearAllMocks();
 
     // Mock AsyncStorage
-    require("@react-native-async-storage/async-storage").getItem = jest
-      .fn()
-      .mockResolvedValue(null);
-    require("@react-native-async-storage/async-storage").setItem = jest
-      .fn()
-      .mockResolvedValue(undefined);
+    (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
+    (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
-    require("../utils/storage").default = {
-      getAppSettings: jest.fn().mockResolvedValue({
-        ocrLanguages: ["eng"],
-        autoSave: true,
-        notificationEnabled: true,
-        dataUsage: "wifi-only",
-      }),
-      getContacts: jest.fn().mockResolvedValue([]),
-      saveOcrLanguages: jest.fn().mockResolvedValue(undefined),
-      saveAutoSaveEnabled: jest.fn().mockResolvedValue(undefined),
-      saveNotificationEnabled: jest.fn().mockResolvedValue(undefined),
-      saveDataUsagePreference: jest.fn().mockResolvedValue(undefined),
-      resetAppData: jest.fn().mockResolvedValue(undefined),
-    };
+    (storageUtils.getAppSettings as jest.Mock).mockResolvedValue({
+      ocrLanguages: ["eng"],
+      autoSave: true,
+      notificationEnabled: true,
+      dataUsage: "wifi-only",
+    });
+    (storageUtils.getContacts as jest.Mock).mockResolvedValue([]);
+    (storageUtils.saveOcrLanguages as jest.Mock).mockResolvedValue(undefined);
+    (storageUtils.saveAutoSaveEnabled as jest.Mock).mockResolvedValue(undefined);
+    (storageUtils.saveNotificationEnabled as jest.Mock).mockResolvedValue(undefined);
+    (storageUtils.saveDataUsagePreference as jest.Mock).mockResolvedValue(undefined);
+    (storageUtils.resetAppData as jest.Mock).mockResolvedValue(undefined);
   });
 
   it("renders without crashing", async () => {

@@ -1,5 +1,4 @@
-/* global by, element, waitFor, expect */
-
+/* eslint-disable no-unused-vars */
 const {
   launchCleanApp,
   openSettingsTab,
