@@ -1,5 +1,44 @@
 {
-  "packageManager": "pnpm@10.28.2",
+  "name": "crewcircle",
+  "version": "1.0.0",
+  "description": "CrewCircle - Australian workforce management solution for shift-based businesses",
+  "private": true,
+  "author": {
+    "name": "Sensible Analytics",
+    "email": "hello@crewcircle.co",
+    "url": "https://crewcircle.co"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sensible-Analytics/crewcircle"
+  },
+  "homepage": "https://crewcircle.co",
+  "keywords": [
+    "workforce-management",
+    "roster-scheduling",
+    "time-tracking",
+    "employee-management",
+    "shift-planning",
+    "australian-business",
+    "gps-time-clock",
+    "supabase",
+    "nextjs",
+    "react-native",
+    "expo"
+  ],
+  "workspaces": [
+    "packages/*",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "yarn workspace web dev",
+    "build": "yarn workspace web build",
+    "build:all": "yarn workspaces foreach -A run build",
+    "lint": "yarn workspaces foreach -A run lint",
+    "test": "yarn workspaces foreach -A run test",
+    "clean": "yarn workspaces foreach -pt run clean 2>/dev/null || true"
+  },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -7,13 +46,15 @@
     "@tanstack/react-virtual": "^3.13.23",
     "date-fns": "^4.1.0",
     "immer": "^11.1.4",
-    "react-native-turbo-mock-location-detector": "^2.3.1",
     "stripe": "^20.4.1",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "turbo": "^2.8.20",
     "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20",
+    "yarn": ">=1.22"
   }
 }

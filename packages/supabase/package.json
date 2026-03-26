@@ -28,5 +28,8 @@
     "@types/react": "^19",
     "typescript": "^5.9.3",
     "vitest": "^3.1.4"
+  },
+  "peerDependencies": {
+    "next": "^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0"
   }
 }

@@ -28,7 +28,7 @@ type Supabase = ReturnType<typeof createClient>;
  */
 export async function createShift(supabase: Supabase, shiftData: unknown): Promise<Shift> {
    // Validate the input
-   const validated = shiftSchema.parse(shiftData) as z.infer<typeof shiftSchema>;
+   const validated = shiftSchema.parse(shiftData);
    
    // Insert the shift
    const { data, error } = await supabase
