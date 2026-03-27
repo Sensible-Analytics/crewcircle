@@ -60,7 +60,7 @@ target 'CardScannerApp' do
         
         # Fix RnMlkitOcr bridging header for Swift/ObjC interoperability
         if target.name == 'RnMlkitOcr'
-          config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = '$(PROJECT_DIR)/RnMlkitOcr-Bridging-Header.h'
+          config.build_settings['SWIFT_OBJC_BRIDGING_HEADER'] = '$(SRCROOT)/../RnMlkitOcr-Bridging-Header.h'
           config.build_settings['SWIFT_VERSION'] = '5.0'
           config.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
         end
