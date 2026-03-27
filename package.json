@@ -1,7 +1,6 @@
 {
   "name": "cardscanner",
   "version": "1.0.0",
-  "type": "module",
   "description": "A professional business card scanner application built with React Native, featuring OCR-powered text extraction and intelligent contact parsing",
   "private": true,
   "repository": {
