@@ -1,0 +1,23 @@
+name: Question
+description: Ask a question about the project
+title: "[QUESTION TITLE]"
+labels: ["question"]
+assignees: []
+body:
+**Is your question related to a problem? Please describe.**
+A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+
+**What's happening currently**
+A clear and concise description of what is currently happening.
+
+**What do you expect to happen**
+A clear and concise description of what you expect to happen.
+
+**Steps to reproduce**
+If helpful, please describe the steps to reproduce the problem:
+1. Step one
+2. Step two
+3. Step three
+
+**Additional context**
+Add any other context or screenshots about the problem here.
