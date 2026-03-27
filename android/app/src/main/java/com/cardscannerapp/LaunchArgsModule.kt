@@ -8,7 +8,7 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 
 class LaunchArgsModule(
-    reactContext: ReactApplicationContext
+    private val reactContext: ReactApplicationContext
 ) : ReactContextBaseJavaModule(reactContext) {
 
     override fun getName(): String = "LaunchArgs"
@@ -27,7 +27,7 @@ class LaunchArgsModule(
         val args = mutableMapOf<String, Any>()
 
         // 1. Try to get extras from the current activity's intent
-        val activity = currentActivity
+        val activity = reactContext.currentActivity
         if (activity != null) {
             val intent = activity.intent
             val extras = intent?.extras
