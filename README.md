@@ -1,117 +1,112 @@
-<p align="center">
-  <img src="https://crewcircle.co/logo.png" alt="CrewCircle" width="200"/>
-</p>
+<div align="center">
 
-<h1 align="center">CrewCircle</h1>
+[![CrewCircle](https://crewcircle.co/logo.png)](https://crewcircle.co)
 
-<p align="center">
-  <strong>Australian Workforce Management Solution</strong><br>
-  Roster scheduling, time tracking, and team management for shift-based businesses
-</p>
+# CrewCircle
 
-<p align="center">
-  <a href="https://crewcircle.co">Website</a> •
-  <a href="https://crewcircle.vercel.app">Live Demo</a> •
-  <a href="https://docs.crewcircle.co">Documentation</a>
-</p>
+### Australian Workforce Management Solution
+
+**Roster scheduling, time tracking, and team management for shift-based businesses**
+
+[![Live App](https://img.shields.io/badge/Live_App-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://crewcircle.co)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/Sensible-Analytics/crewcircle)
+
+</div>
 
 ---
 
-## Features
+## 🛡️ Security First
 
-### 📅 Roster Management
-- Drag-and-drop scheduling with conflict detection
-- Publish rosters instantly to your team
-- Support for multiple work locations
-- Week-at-a-glance and day views
+> ⚠️ **CRITICAL SECURITY WARNING**
+>
+> This repository uses **automated secret scanning**. NEVER commit:
+> - API keys (OpenAI, Anthropic, database credentials)
+> - AI agent tokens
+> - Database connection strings
+> - Private keys
+>
+> **Before committing:** Review our [Security Policy](SECURITY.md) and [AI Agent Keys Policy](AI_AGENT_KEYS_POLICY.md)
 
-### ⏰ Time Clock with GPS
-- Geofence-verified clock in/out
-- Track actual hours worked
-- Offline support for time clock
-- Multiple location support
+---
+
+## 🎯 What is CrewCircle?
+
+CrewCircle is a comprehensive **workforce management platform** designed specifically for Australian shift-based businesses. From roster scheduling to GPS-verified time tracking, we help you manage your team efficiently.
+
+### Perfect For
+
+- 🏥 Healthcare facilities (clinics, aged care)
+- 🏪 Retail stores and chains
+- 🍽️ Hospitality venues
+- 🏭 Manufacturing & warehousing
+- 🎪 Events & venues
+
+---
+
+## ✨ Features
+
+### 📅 Smart Roster Management
+
+- **Drag-and-Drop Scheduling** — Intuitive interface with conflict detection
+- **Multi-Location Support** — Manage teams across multiple sites
+- **Template Rosters** — Save and reuse common patterns
+- **Publish & Notify** — Instant team notifications
+- **Week/Day Views** — Flexible calendar perspectives
+
+### ⏰ GPS Time Clock
+
+- **Geofence Verification** — Clock in/out only at approved locations
+- **Offline Support** — Works without internet connection
+- **Real-Time Tracking** — Monitor who's on shift
+- **Break Management** — Track meal and rest breaks
+- **Photo Verification** — Optional photo check-in
 
 ### 👥 Team Management
-- Employee invitation system
-- Role-based access (Owner, Manager, Employee)
-- Availability management
-- ABN validation for Australian businesses
 
-### 📊 Timesheets & Reports
-- Automatic timesheet generation
-- CSV export for payroll
-- Labor cost tracking
-- Export historical data
+- **Role-Based Access** — Owner, Manager, Employee permissions
+- **Employee Onboarding** — Self-service invitation system
+- **Availability Management** — Staff submit availability preferences
+- **Document Storage** — Store certifications and compliance docs
+- **ABN Validation** — Automatic Australian Business Number verification
 
-### 🔔 Real-time Updates
-- Push notifications for shift changes
-- Clock in/out alerts
-- Team messaging
-- Live roster updates
+### 📊 Timesheets & Payroll
 
-### 💳 Simple Billing
-- Free tier (up to 5 employees)
-- Starter plan for growing teams
-- Stripe-powered payments
-- Automatic subscription management
+- **Automatic Timesheets** — Generated from clock-in/out data
+- **CSV Export** — Compatible with Xero, MYOB, QuickBooks
+- **Labor Cost Tracking** — Real-time wage calculations
+- **Overtime Detection** — Automatic award rate calculations
+- **Historical Reports** — Export data for any time period
 
----
+### 🔔 Communication
 
-## Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Frontend (Web) | Next.js 16, React 19, TypeScript |
-| Mobile App | React Native, Expo |
-| Backend | Supabase (PostgreSQL, Auth, Edge Functions) |
-| Styling | Tailwind CSS |
-| Payments | Stripe |
-| Deployment | Vercel (Web), EAS (Mobile) |
+- **Push Notifications** — Shift reminders and changes
+- **Team Messaging** — In-app communication
+- **Shift Swaps** — Request and approve shift exchanges
+- **Availability Requests** — Time-off management
 
 ---
 
-## Project Structure
+## 💳 Pricing
 
-```
-crewcircle/
-├── apps/
-│   ├── web/              # Next.js web application
-│   │   ├── src/
-│   │   │   ├── app/      # Next.js App Router pages
-│   │   │   ├── features/ # Feature modules
-│   │   │   ├── packages/# Shared packages (local)
-│   │   │   └── store/    # Zustand state management
-│   │   └── public/       # Static assets
-│   └── mobile/           # React Native mobile app
-│       ├── app/          # Expo Router pages
-│       ├── lib/          # Utility libraries
-│       └── context/      # React contexts
-├── packages/
-│   ├── supabase/         # Supabase client utilities
-│   ├── validators/        # Zod validation schemas
-│   └── ui-shared/         # Shared UI components
-├── supabase/
-│   ├── migrations/        # Database migrations
-│   └── supabase/
-│       └── functions/     # Edge functions
-│           ├── stripe-webhook/
-│           ├── shift-reminder/
-│           └── send-push-notification/
-└── docs/                  # Documentation
-```
+| Plan | Price | Features |
+|------|-------|----------|
+| **Free** | $0 | Up to 5 employees, basic scheduling |
+| **Starter** | $5/employee/month | Unlimited employees, advanced features |
+| **Business** | Custom | Priority support, custom integrations |
+
+[Start Free Trial](https://crewcircle.co)
 
 ---
 
-## Getting Started
+## 🚀 Quick Start
 
-### Prerequisites
+### Web App
+Visit **[crewcircle.co](https://crewcircle.co)** to get started immediately.
 
-- Node.js 20+
-- Yarn package manager
-- Supabase account
-- Stripe account (for billing)
+### Mobile App
+Download the CrewCircle mobile app for iOS and Android (coming soon).
 
-### Installation
+### Local Development
 
 ```bash
 # Clone the repository
@@ -121,106 +116,133 @@ cd crewcircle
 # Install dependencies
 yarn install
 
-# Copy environment variables
+# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your Supabase and Stripe keys
+# Edit .env.local with your Supabase credentials
 
-# Start development server
+# Run development server
 yarn dev
 ```
 
-### Environment Variables
+---
 
-```bash
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+## 🛠️ Tech Stack
 
-# Stripe
-STRIPE_SECRET_KEY=your-stripe-secret
-STRIPE_WEBHOOK_SECRET=your-webhook-secret
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your-publishable-key
+| Component | Technology |
+|-----------|------------|
+| **Web Frontend** | Next.js 16, React 19, TypeScript |
+| **Mobile App** | React Native, Expo |
+| **Backend** | Supabase (PostgreSQL, Auth, Edge Functions) |
+| **Styling** | Tailwind CSS |
+| **State Management** | Zustand |
+| **Payments** | Stripe |
+| **Deployment** | Vercel (Web), EAS (Mobile) |
 
-# App
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+---
+
+## 📁 Project Structure
+
+```
+crewcircle/
+├── apps/
+│   ├── web/              # Next.js web application
+│   └── mobile/           # React Native mobile app
+├── packages/
+│   ├── supabase/         # Supabase client utilities
+│   ├── validators/       # Zod validation schemas
+│   └── ui-shared/        # Shared UI components
+├── supabase/
+│   ├── migrations/       # Database migrations
+│   └── functions/        # Edge functions
+│       ├── stripe-webhook/
+│       ├── shift-reminder/
+│       └── send-push-notification/
+└── docs/                 # Documentation
 ```
 
 ---
 
-## Deployment
+## 🏆 Built for Australian Businesses
 
-### Web Application (Vercel)
+CrewCircle is designed with Australian compliance in mind:
 
-1. Connect your GitHub repository to Vercel
-2. Add environment variables in Vercel dashboard
-3. Deploy automatically on push to main
-
-### Mobile App (EAS)
-
-```bash
-# Install EAS CLI
-npm install -g eas-cli
-
-# Configure EAS Build
-eas build:configure
-
-# Build for Android
-eas build --platform android --profile production
-
-# Submit to Google Play
-eas submit --platform android --latest
-```
-
-### Supabase
-
-```bash
-cd supabase
-
-# Link to your project
-supabase link --project-ref your-project-ref
-
-# Deploy migrations
-supabase db push
-
-# Deploy edge functions
-supabase functions deploy
-```
+- ✅ **Fair Work Act** compliant
+- ✅ **Single Touch Payroll** ready
+- ✅ **Superannuation** tracking
+- ✅ **Award Rates** support
+- ✅ **ABN Validation** built-in
 
 ---
 
-## Documentation
+## 🤝 Contributing
 
-For full documentation, visit [docs.crewcircle.co](https://docs.crewcircle.co)
-
----
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ---
 
-## License
+## 🛡️ Security
 
-Proprietary - All rights reserved by Sensible Analytics
+### 🔒 Automated Protection
+
+This repository includes:
+- ✅ **Pre-commit hooks** - Scan for secrets before every commit
+- ✅ **GitHub Secret Scanning** - Automatic detection of exposed credentials
+- ✅ **Push Protection** - Block commits containing secrets
+- ✅ **Dependency scanning** - Detect vulnerable packages
+
+### 🚨 Security Requirements
+
+**Before contributing:**
+
+1. **Install pre-commit hooks:**
+   ```bash
+   pip install pre-commit
+   pre-commit install
+   ```
+
+2. **Use environment variables:**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your keys (NEVER commit this file!)
+   ```
+
+3. **Verify .env is ignored:**
+   ```bash
+   git check-ignore .env  # Should output: .env
+   ```
+
+### 🆘 Security Incidents
+
+**If you accidentally commit a secret:**
+
+1. **DO NOT PANIC**
+2. **REVOKE the key immediately** via provider dashboard
+3. **Contact:** security@sensibleanalytics.co
+4. **Follow our [Incident Response Guide](SECURITY.md)**
+
+### 📋 Security Checklist
+
+- [ ] Pre-commit hooks installed
+- [ ] .env file created from .env.example
+- [ ] .env added to .gitignore
+- [ ] No hardcoded API keys in code
+- [ ] No console.log of sensitive data
+
+For full details, see our [Security Policy](SECURITY.md) and [AI Agent Keys Policy](AI_AGENT_KEYS_POLICY.md).
 
 ---
 
-## Support
+## 📄 License
 
-- **Email**: support@crewcircle.co
-- **Website**: https://crewcircle.co
-- **Documentation**: https://docs.crewcircle.co
+MIT License — see [LICENSE](LICENSE)
 
 ---
 
-<p align="center">
-  Built with ❤️ in Australia by <a href="https://sensible-analytics.com">Sensible Analytics</a>
-</p>
+<div align="center">
 
+**Built by [Sensible Analytics](https://www.sensibleanalytics.co)**  
+*Sydney, Australia*
 
+[Website](https://crewcircle.co) · [Support](mailto:support@crewcircle.co) · [LinkedIn](https://www.linkedin.com/in/prabhatr/)
+
+</div>
