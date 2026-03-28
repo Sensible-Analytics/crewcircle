@@ -24,13 +24,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     registerForPushNotifications();
 
-    const notificationSubscription = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Notification received:', notification);
-    });
+    const notificationSubscription = Notifications.addNotificationReceivedListener(
+      (notification: Notifications.Notification) => {
+        console.log('Notification received:', notification);
+      }
+    );
 
-    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
-    });
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(
+      (response: Notifications.NotificationResponse) => {
+        console.log('Notification response:', response);
+      }
+    );
 
     return () => {
       notificationSubscription.remove();
@@ -81,6 +85,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      const deviceType = await Device.getDeviceTypeAsync();
+      const platform = deviceType === Device.DeviceType.TABLET ? 'ios' : 'android';
+
       if (existingToken) {
         const { error: updateError } = await supabase
           .from('push_tokens')
@@ -99,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .insert({
             profile_id: session?.user?.id,
             expo_push_token: token,
-            platform: Device.getDeviceType() === Device.DeviceType.Tablet ? 'ios' : 'android',
+            platform,
           });
 
         if (insertError) {

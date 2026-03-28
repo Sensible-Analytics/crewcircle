@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { 
   DndContext, 
   closestCenter, 
@@ -235,11 +235,12 @@ const RosterGrid: React.FC = () => {
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragOverlay, setDragOverlay] = useState<React.ReactNode | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Virtual rows for employees
   const rowVirtualizer = useVirtualizer({
     count: profiles.length,
-    getScrollElement: () => null,
+    getScrollElement: () => scrollContainerRef.current,
     estimateSize: () => 80,
     overscan: 5,
   });
@@ -250,7 +251,17 @@ const RosterGrid: React.FC = () => {
    // Handle drag start
    const handleDragStart = (event: DragStartEvent) => {
      if (isReadOnly) return;
-     setActiveId(String(event.active.id));
+     const shiftId = String(event.active.id);
+     setActiveId(shiftId);
+     
+     // Set drag overlay content
+     const shift = shifts.find(s => s.id === shiftId);
+     if (shift) {
+       const employee = profiles.find(p => p.id === shift.profile_id);
+       if (employee) {
+         setDragOverlay(renderShiftItem(shift, employee));
+       }
+     }
    };
 
    const handleDragOver = (event: DragOverEvent) => {
@@ -258,50 +269,68 @@ const RosterGrid: React.FC = () => {
      if (String(active.id) === String(over?.id)) return;
    };
 
-   const handleDragEnd = (event: DragEndEvent) => {
+   const handleDragEnd = async (event: DragEndEvent) => {
      if (isReadOnly) return;
      
      const { active, over } = event;
      
-      // If we dropped on a different cell, we need to update the shift
-      if (over && String(active.id) !== String(over.id)) {
-      // Parse the active and over IDs to get employee and day
-      // ID format: shift-{shiftId} or cell-{employeeId}-{dayIndex}
-      const activeIdStr = String(active.id);
-      const overIdStr = String(over.id);
-      if (activeIdStr.startsWith('shift-') && overIdStr.startsWith('cell-')) {
-        const shiftId = activeIdStr.split('-')[1];
-        const [, employeeId, dayIndexStr] = overIdStr.split('-');
-        const dayIndex = parseInt(dayIndexStr, 10);
-        
-        // Find the shift
-        const shiftIndex = shifts.findIndex(s => s.id === shiftId);
-        if (shiftIndex !== -1) {
-          const shift = shifts[shiftIndex];
-          
-          // Update the shift to move it to the new day/employee
-          // We need to keep the same time but change the day
-          // For simplicity, we'll just update the profile_id and adjust the date
-          // In a real app, we would have a more sophisticated date/time handling
-          const updatedShift = {
-            ...shift,
-            profile_id: employeeId,
-            // We would need to adjust the date to match the new day while keeping the same time
-            // This is a simplified version - in reality, we'd need to calculate the correct date
-            // based on the selected week and day index
-          };
-
-           // Update the shift in the store
+     if (over && String(active.id) !== String(over.id)) {
+       const activeIdStr = String(active.id);
+       const overIdStr = String(over.id);
+       if (activeIdStr.startsWith('shift-') && overIdStr.startsWith('cell-')) {
+         const shiftId = activeIdStr.split('-')[1];
+         const [, targetEmployeeId, targetDayIndexStr] = overIdStr.split('-');
+         const targetDayIndex = parseInt(targetDayIndexStr, 10);
+         
+         const shiftIndex = shifts.findIndex(s => s.id === shiftId);
+         if (shiftIndex !== -1) {
+           const shift = shifts[shiftIndex];
+           
+           // Calculate new start/end times for target day while preserving time
+           const originalStart = new Date(shift.start_time);
+           const originalEnd = new Date(shift.end_time);
+           const durationMs = originalEnd.getTime() - originalStart.getTime();
+           
+           // Get target date from week start + day index
+           const weekStartDate = new Date(selectedWeekStart);
+           weekStartDate.setDate(weekStartDate.getDate() + targetDayIndex);
+           const targetDateStr = weekStartDate.toISOString().split('T')[0];
+           
+           const newStartTime = new Date(targetDateStr + 'T' + originalStart.toISOString().split('T')[1]);
+           const newEndTime = new Date(newStartTime.getTime() + durationMs);
+           
+           // Optimistic update in store
+           const updatedShift = {
+             ...shift,
+             profile_id: targetEmployeeId,
+             start_time: newStartTime.toISOString(),
+             end_time: newEndTime.toISOString(),
+           };
+           
            const newShifts = [...shifts];
            newShifts[shiftIndex] = updatedShift;
            setShifts(newShifts);
-        }
-      }
-    }
-    
-    setActiveId(null);
-    setDragOverlay(null);
-  };
+           
+           // Persist to database
+           try {
+             await sql`
+               UPDATE shifts 
+               SET 
+                 profile_id = ${targetEmployeeId},
+                 start_time = ${newStartTime.toISOString()},
+                 end_time = ${newEndTime.toISOString()}
+               WHERE id = ${shiftId}
+             `;
+           } catch (err) {
+             console.error('Failed to update shift:', err);
+           }
+         }
+       }
+     }
+     
+     setActiveId(null);
+     setDragOverlay(null);
+   };
 
    // Sensors
    const pointerSensor = useSensor(PointerSensor, {
@@ -682,29 +711,45 @@ const RosterGrid: React.FC = () => {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="grid grid-cols-[200px_repeat(7,1fr)] gap-1">
-            <div className="font-semibold p-2 bg-gray-100 rounded">Employee</div>
-            {DAYS_OF_WEEK.map((day, index) => (
-              <div key={day} className="font-semibold p-2 bg-gray-100 text-center rounded">
+          <div 
+            ref={scrollContainerRef}
+            className="grid grid-cols-[200px_repeat(7,1fr)] gap-1 max-h-[600px] overflow-auto"
+          >
+            <div className="font-semibold p-2 bg-gray-100 rounded sticky top-0 z-10">Employee</div>
+            {DAYS_OF_WEEK.map((day) => (
+              <div key={day} className="font-semibold p-2 bg-gray-100 text-center rounded sticky top-0 z-10">
                 {day}
               </div>
             ))}
 
-            {profiles.map((profile) => (
-              <React.Fragment key={profile.id}>
-                <div className="p-2 bg-gray-50 border-t flex items-center">
-                  <div className="font-medium">
-                    {profile.first_name} {profile.last_name}
+            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+              const profile = profiles[virtualRow.index];
+              return (
+                <React.Fragment key={profile.id}>
+                  <div 
+                    className="p-2 bg-gray-50 border-t flex items-center sticky left-0 z-[1]"
+                    style={{ height: `${virtualRow.size}px` }}
+                  >
+                    <div className="font-medium">
+                      {profile.first_name} {profile.last_name}
+                    </div>
                   </div>
-                </div>
-                {DAYS_OF_WEEK.map((_, dayIndex) => (
-                  <div key={`${profile.id}-${dayIndex}`} className="min-h-[80px]">
-                    {renderCell(profile.id, dayIndex)}
-                  </div>
-                ))}
-              </React.Fragment>
-            ))}
+                  {DAYS_OF_WEEK.map((_, dayIndex) => (
+                    <div 
+                      key={`${profile.id}-${dayIndex}`} 
+                      className="min-h-[80px]"
+                      style={{ height: `${virtualRow.size}px` }}
+                    >
+                      {renderCell(profile.id, dayIndex)}
+                    </div>
+                  ))}
+                </React.Fragment>
+              );
+            })}
           </div>
+          <DragOverlay>
+            {dragOverlay}
+          </DragOverlay>
         </DndContext>
       )}
 

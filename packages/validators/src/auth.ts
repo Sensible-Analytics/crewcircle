@@ -11,25 +11,15 @@ export const signupSchema = z.object({
     .regex(/[^a-zA-Z0-9]/, 'Password must contain at least one special character'),
   businessName: z.string().min(1, 'Business name is required'),
   abn: z.string()
-    .regex(/^\d{2}\s?\d{3}\s?\d{3}\s?\d{3}$/, 'Invalid ABN format')
     .refine((abn) => {
       // Remove spaces for validation
       const cleanAbn = abn.replace(/\s/g, '');
-      // Check length
+      // Check length - ABN must be 11 digits
       if (cleanAbn.length !== 11) return false;
       // Check all digits
       if (!/^\d{11}$/.test(cleanAbn)) return false;
-      
-      // Modulus 89 validation
-      const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
-      let sum = 0;
-      for (let i = 0; i < 9; i++) {
-        sum += parseInt(cleanAbn[i]) * weights[i];
-      }
-      const checkDigit = sum % 89;
-      const lastTwoDigits = parseInt(cleanAbn.substring(9, 11));
-      return checkDigit === lastTwoDigits;
-    }, 'Invalid ABN'),
+      return true;
+    }, 'Invalid ABN - must be 11 digits'),
 });
 
 // Invitation schema for inviting employees

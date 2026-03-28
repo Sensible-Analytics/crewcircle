@@ -151,8 +151,10 @@ function checkAvailabilityConflict(shift: Shift, availabilities: Availability[])
   );
   
   for (const avail of dayAvailabilities) {
-    const availStart = new Date(`1970-01-01T${avail.start_time}:00Z`);
-    const availEnd = new Date(`1970-01-01T${avail.end_time}:00Z`);
+    // Use the shift's date to construct availability times for proper comparison
+    const shiftDate = shiftStart.toISOString().split('T')[0];
+    const availStart = new Date(`${shiftDate}T${avail.start_time}:00Z`);
+    const availEnd = new Date(`${shiftDate}T${avail.end_time}:00Z`);
     
     // Handle overnight availability (e.g., 22:00 to 06:00)
     let isUnavailable = false;

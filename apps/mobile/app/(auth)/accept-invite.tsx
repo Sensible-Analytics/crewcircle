@@ -1,17 +1,21 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { createMobileSupabaseClient } from '../../lib/supabase/client.mobile';
 
 export default function AcceptInvite() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [invitationCode, setInvitationCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const supabase = createMobileSupabaseClient();
+
+  const invitationToken = params.token as string | undefined;
 
   const handleAcceptInvite = async () => {
-    if (!email || !password || !invitationCode) {
+    if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -21,15 +25,35 @@ export default function AcceptInvite() {
       return;
     }
 
+    if (password.length < 8) {
+      Alert.alert('Error', 'Password must be at least 8 characters');
+      return;
+    }
+
     setIsLoading(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      Alert.alert('Success', 'Invitation accepted! Please log in with your new credentials.');
-      router.push('/(auth)/login');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to accept invitation');
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            invitation_token: invitationToken,
+          },
+        },
+      });
+
+      if (error) {
+        Alert.alert('Error', error.message);
+        return;
+      }
+
+      if (data.user) {
+        Alert.alert('Success', 'Account created! Please check your email to verify your account, then log in.');
+        router.push('/(auth)/login');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to accept invitation');
     } finally {
       setIsLoading(false);
     }
@@ -47,13 +71,7 @@ export default function AcceptInvite() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-      />
-
-      <TextInput
-        style={styles.input}
-        placeholder="Invitation Code"
-        value={invitationCode}
-        onChangeText={setInvitationCode}
+        autoComplete="email"
       />
 
       <TextInput
@@ -62,6 +80,7 @@ export default function AcceptInvite() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        autoComplete="new-password"
       />
 
       <TextInput
@@ -70,6 +89,7 @@ export default function AcceptInvite() {
         value={confirmPassword}
         onChangeText={setConfirmPassword}
         secureTextEntry
+        autoComplete="new-password"
       />
 
       <TouchableOpacity
@@ -78,7 +98,7 @@ export default function AcceptInvite() {
         disabled={isLoading}
       >
         <Text style={styles.buttonText}>
-          {isLoading ? 'Processing...' : 'Accept Invitation'}
+          {isLoading ? 'Processing...' : 'Create Account'}
         </Text>
       </TouchableOpacity>
 
