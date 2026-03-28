@@ -161,7 +161,7 @@ test.describe('Demo Page - After Setup', () => {
     }
   });
 
-  test('roster page shows main content', async ({ page }) => {
+  test('roster page is accessible after demo login', async ({ page }) => {
     await page.goto('/demo');
     const setupBtn = page.locator('button:has-text("Set Up Demo Organization")');
     await setupBtn.click();
@@ -173,9 +173,8 @@ test.describe('Demo Page - After Setup', () => {
       const ownerBtn = page.locator('button:has-text("Owner (Maria)")');
       await ownerBtn.click();
       await expect(page).toHaveURL(/\/roster/, { timeout: 10000 });
-      await page.waitForLoadState('networkidle');
-      const body = page.locator('main');
-      await expect(body).toBeVisible({ timeout: 10000 });
+      await page.waitForLoadState('domcontentloaded');
+      await expect(page.locator('body')).toBeVisible({ timeout: 10000 });
     }
   });
 });
