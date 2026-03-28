@@ -1,66 +1,103 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { createBrowserSupabaseClient } from '@/packages/supabase/src/client.browser';
-import { useAuth } from '@/packages/supabase/src/useAuth';
+import { useAuth } from '@/lib/clerk/useAuth';
+import { sql } from '@/lib/neon/client';
+
+interface Tenant {
+  id: string;
+  name: string;
+  plan: string;
+  abn: string | null;
+  subscription_status: string | null;
+}
 
 export default function BillingPage() {
-  const { user } = useAuth();
-  const supabase = createBrowserSupabaseClient();
-  const [tenant, setTenant] = useState<any>(null);
+  const { user, tenantId, isLoading: authLoading } = useAuth();
+  const [tenant, setTenant] = useState<Tenant | null>(null);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAbnModal, setShowAbnModal] = useState(false);
+  const [abnInput, setAbnInput] = useState('');
+  const [abnError, setAbnError] = useState('');
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      // Get current profile to get tenant_id
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user?.id)
-        .single();
-
-      if (profile) {
-        // Get tenant data
-        const { data: tenantData } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('id', profile.tenant_id)
-          .single();
+  useEffect(() => {
+    async function fetchData() {
+      if (authLoading || !tenantId) return;
+      
+      setIsLoading(true);
+      try {
+        const tenantData = await sql`
+          SELECT id, name, plan, abn FROM tenants WHERE id = ${tenantId}
+        `;
         
-        setTenant(tenantData);
+        if (tenantData.length > 0) {
+          setTenant(tenantData[0] as Tenant);
+        }
 
-        // Get employee count
-        const { count } = await supabase
-          .from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_id', profile.tenant_id)
-          .is('deleted_at', null);
+        const count = await sql`
+          SELECT COUNT(*) as count FROM profiles 
+          WHERE tenant_id = ${tenantId} AND deleted_at IS NULL
+        `;
         
-        setEmployeeCount(count || 0);
+        setEmployeeCount(Number(count[0]?.count) || 0);
+      } catch (error) {
+        console.error('Error fetching billing data:', error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching billing data:', error);
-    } finally {
-      setIsLoading(false);
+    }
+
+    fetchData();
+  }, [tenantId, authLoading]);
+
+  const validateAbn = (abn: string): boolean => {
+    const cleanAbn = abn.replace(/\s/g, '');
+    if (cleanAbn.length !== 11 || !/^\d{11}$/.test(cleanAbn)) return false;
+    
+    const weights = [10, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19];
+    let sum = 0;
+    for (let i = 0; i < 9; i++) {
+      sum += parseInt(cleanAbn[i]) * weights[i];
+    }
+    const checkDigit = sum % 89;
+    const lastTwoDigits = parseInt(cleanAbn.substring(9, 11));
+    return checkDigit === lastTwoDigits;
+  };
+
+  const handleUpgradeClick = () => {
+    if (!tenant?.abn) {
+      setShowAbnModal(true);
+    } else {
+      proceedToCheckout();
     }
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
+  const handleAbnSubmit = async () => {
+    if (!validateAbn(abnInput)) {
+      setAbnError('Invalid ABN. Must be 11 valid digits.');
+      return;
     }
-  }, [user]);
 
-  const handleUpgrade = async () => {
+    setAbnError('');
+    
+    await sql`
+      UPDATE tenants SET abn = ${abnInput.replace(/\s/g, '')} WHERE id = ${tenant!.id}
+    `;
+
+    setTenant({ ...tenant!, abn: abnInput });
+    setShowAbnModal(false);
+    proceedToCheckout();
+  };
+
+  const proceedToCheckout = async () => {
     try {
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          tenantId: tenant.id,
-          email: user?.email,
+          tenantId: tenant!.id,
+          email: user?.emailAddresses?.[0]?.emailAddress,
         }),
       });
       const { url } = await response.json();
@@ -70,7 +107,13 @@ export default function BillingPage() {
     }
   };
 
-  if (isLoading) return <div className="p-6">Loading...</div>;
+  if (authLoading || !user) {
+    return <div className="p-6">Loading...</div>;
+  }
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -97,7 +140,7 @@ export default function BillingPage() {
           </p>
           {tenant?.plan !== 'starter' && (
             <button
-              onClick={handleUpgrade}
+              onClick={handleUpgradeClick}
               className="w-full py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors"
             >
               Upgrade to Starter ($4 + GST / emp / mo)
@@ -138,6 +181,46 @@ export default function BillingPage() {
           <button className="text-red-600 hover:underline text-sm font-medium">Cancel Subscription</button>
         </div>
       </div>
+
+      {showAbnModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-xl font-bold mb-2">ABN Required for Paid Plan</h3>
+            <p className="text-gray-600 mb-4">
+              To upgrade to the paid plan, we need your Australian Business Number (ABN) for compliance purposes.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                ABN
+              </label>
+              <input
+                type="text"
+                value={abnInput}
+                onChange={(e) => setAbnInput(e.target.value)}
+                placeholder="11 123 123 123"
+                className={`w-full px-4 py-3 border rounded-lg ${
+                  abnError ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {abnError && <p className="text-sm text-red-600 mt-1">{abnError}</p>}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowAbnModal(false)}
+                className="flex-1 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAbnSubmit}
+                className="flex-1 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                Continue to Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

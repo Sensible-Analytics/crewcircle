@@ -1,8 +1,13 @@
 {
-  "name": "validators",
+  "name": "@packages/validators",
   "version": "1.0.0",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "exports": {
+    "./shift": "./src/shift.ts",
+    "./conflicts": "./src/conflicts.ts",
+    "./index": "./src/index.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit"

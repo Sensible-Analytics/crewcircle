@@ -23,7 +23,7 @@ import { useRosterStore } from '@/store/rosterStore';
 import { Shift } from '@/types/shift';
 import { Profile } from '@/types/profile';
 import { Roster } from '@/store/rosterStore';
-import { Availability } from '@/packages/validators/src/conflicts';
+import { Availability } from '@/lib/validators/conflicts';
 
 interface ShiftFormData {
   employeeId: string;
@@ -32,11 +32,11 @@ interface ShiftFormData {
   roleLabel: string;
   notes: string;
 }
-import { createBrowserSupabaseClient } from '@/packages/supabase/src/client.browser';
-import { useAuth } from '@/packages/supabase/src/useAuth';
+import { useAuth } from '@/lib/clerk/useAuth';
+import { sql } from '@/lib/neon/client';
 import { z } from 'zod';
-import { shiftSchema } from '@/packages/validators/src/shift';
-import { detectConflicts } from '@/packages/validators/src/conflicts';
+import { shiftSchema } from '@/lib/validators/shift';
+import { detectConflicts } from '@/lib/validators/conflicts';
 import { format } from 'date-fns';
 import { useRosterRealtime } from './hooks/useRosterRealtime';
 
@@ -208,15 +208,30 @@ const RosterGrid: React.FC = () => {
    const copyForwardRoster: () => Promise<boolean> = store.copyForwardRoster;
    const operationError: string | null = store.operationError;
    const isOperating: boolean = store.isOperating;
-   const setOperationError = store.setOperationError;
-  
-  const { user, tenantId, isLoading: authLoading } = useAuth();
+    const setOperationError = store.setOperationError;
+   
+  const { user, tenantId, isLoading: authLoading, isDemoMode } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
   const [openShiftModal, setOpenShiftModal] = useState(false);
   const [modalEmployeeId, setModalEmployeeId] = useState<string>('');
   const [modalDayIndex, setModalDayIndex] = useState<number>(0);
+  const fetchCurrentRoster = store.fetchCurrentRoster;
+  const setProfiles = store.setProfiles;
 
-  useRosterRealtime();
+  useEffect(() => {
+    if (authLoading) return;
+    if (!tenantId) return;
+    
+    fetchCurrentRoster(tenantId, selectedWeekStart);
+    
+    sql`SELECT * FROM profiles WHERE tenant_id = ${tenantId}`
+      .then(data => setProfiles(data as Profile[]))
+      .catch(console.error);
+  }, [tenantId, selectedWeekStart, authLoading, fetchCurrentRoster, setProfiles]);
+
+  if (!isDemoMode) {
+    useRosterRealtime();
+  }
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragOverlay, setDragOverlay] = useState<React.ReactNode | null>(null);
@@ -448,76 +463,49 @@ const RosterGrid: React.FC = () => {
     }
   };
 
-  // Auto-save draft roster to Supabase (debounced, every 5 seconds)
+  // Auto-save draft roster (debounced, every 5 seconds)
   useEffect(() => {
-    // Only proceed if we have auth data and shifts
-    if (authLoading || !user || !tenantId) return;
+    if (authLoading || isDemoMode || !user || !tenantId) return;
 
     let saveTimeout: NodeJS.Timeout;
     const saveRoster = async () => {
+      if (isDemoMode) return;
+      
       try {
         setIsSaving(true);
-        const supabase = createBrowserSupabaseClient();
 
         // Get or create a draft roster for the current week and tenant
-        let { data: roster, error: rosterError } = await supabase
-          .from('rosters')
-          .select('id')
-          .eq('tenant_id', tenantId)
-          .eq('week_start', selectedWeekStart)
-          .eq('status', 'draft')
-          .single();
+        const rosters = await sql`
+          SELECT id FROM rosters 
+          WHERE tenant_id = ${tenantId} 
+          AND week_start = ${selectedWeekStart}
+          AND status = 'draft'
+        `;
 
-        if (rosterError && rosterError.code === 'PGRST116') {
-          // No roster found, create one
-          const { data: newRoster, error: insertError } = await supabase
-            .from('rosters')
-            .insert([
-              {
-                tenant_id: tenantId,
-                week_start: selectedWeekStart,
-                status: 'draft',
-              }
-            ])
-            .select();
+        let rosterId: string;
 
-         if (insertError) throw insertError;
-           roster = newRoster[0];
-         } else if (rosterError) {
-           throw rosterError;
-         }
+        if (rosters.length > 0) {
+          rosterId = rosters[0].id;
+        } else {
+          const newRosters = await sql`
+            INSERT INTO rosters (tenant_id, location_id, week_start, status)
+            VALUES (${tenantId}, '00000000-0000-0000-0000-000000000001', ${selectedWeekStart}, 'draft')
+            RETURNING id
+          `;
+          if (newRosters.length === 0) throw new Error('Failed to create roster');
+          rosterId = newRosters[0].id;
+        }
 
-         // Make sure we have a roster
-         if (!roster) {
-           throw new Error('Roster is null');
-         }
+        // Delete existing shifts
+        await sql`DELETE FROM shifts WHERE roster_id = ${rosterId}`;
 
-         const rosterId = roster.id;
-
-        // Delete existing shifts for this roster
-        const { error: deleteError } = await supabase
-          .from('shifts')
-          .delete()
-          .eq('roster_id', rosterId);
-
-        if (deleteError) throw deleteError;
-
-        // Insert the new shifts
-        const shiftsToInsert = shifts.map(shift => ({
-          tenant_id: tenantId,
-          roster_id: rosterId,
-          profile_id: shift.profile_id,
-          start_time: shift.start_time,
-          end_time: shift.end_time,
-          role_label: shift.role_label,
-          notes: shift.notes,
-        }));
-
-        const { error: insertError } = await supabase
-          .from('shifts')
-          .insert(shiftsToInsert);
-
-        if (insertError) throw insertError;
+        // Insert new shifts
+        for (const shift of shifts) {
+          await sql`
+            INSERT INTO shifts (tenant_id, roster_id, profile_id, start_time, end_time, role_label, notes)
+            VALUES (${tenantId}, ${rosterId}, ${shift.profile_id}, ${shift.start_time}, ${shift.end_time}, ${shift.role_label}, ${shift.notes})
+          `;
+        }
 
         console.log('Roster saved successfully');
       } catch (error) {
@@ -547,6 +535,12 @@ const RosterGrid: React.FC = () => {
       return;
     }
 
+    if (isDemoMode) {
+      alert('Shift creation is disabled in demo mode.');
+      setOpenShiftModal(false);
+      return;
+    }
+
     try {
       // Validate the shift data
       const validated = shiftSchema.parse({
@@ -570,22 +564,25 @@ const RosterGrid: React.FC = () => {
         }
       }
 
-       // Create the shift via Supabase
-       const supabase = createBrowserSupabaseClient();
-       const { data: newShift, error: insertError } = await supabase
-         .from('shifts')
-         .insert({
-           ...validated,
-           tenant_id: tenantId || "",
-           profile_id: shiftData.employeeId,
-         })
-         .select()
-         .single();
+       // Create the shift via NeonDB
+        const newShifts = await sql`
+          INSERT INTO shifts (tenant_id, roster_id, profile_id, start_time, end_time, role_label, notes)
+          VALUES (
+            ${tenantId || ""},
+            ${roster?.id || null},
+            ${shiftData.employeeId},
+            ${shiftData.startTime},
+            ${shiftData.endTime},
+            ${shiftData.roleLabel || null},
+            ${shiftData.notes || null}
+          )
+          RETURNING *
+        `;
 
-       if (insertError) throw insertError;
+        if (newShifts.length === 0) throw new Error('Failed to create shift');
+        const newShift = newShifts[0];
 
-       // Add the shift to the store (optimistic update)
-       setShifts([...shifts, newShift]);
+        setShifts([...shifts, newShift as Shift]);
 
       // Close the modal
       setOpenShiftModal(false);

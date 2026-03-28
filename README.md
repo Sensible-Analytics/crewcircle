@@ -1,170 +1,212 @@
-<div align="center">
-
-[![CrewCircle](https://crewcircle.co/logo.png)](https://crewcircle.co)
-
 # CrewCircle
 
-### **Scheduling Shouldn't Be This Hard**
+<p align="center">
+  <strong>Australian Workforce Management Solution</strong><br>
+  Roster scheduling, time tracking, and team management for shift-based businesses
+</p>
 
-**Australian workforce management for shift-based businesses**
+<p align="center">
+  <a href="https://crewcircle.co">Website</a> •
+  <a href="https://crewcircle.co/demo">Live Demo</a> •
+  <a href="docs/wiki">Documentation</a>
+</p>
 
-[![🚀 Start Free](https://img.shields.io/badge/Start_Free-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://crewcircle.co)
-[![📱 Live Demo](https://img.shields.io/badge/Live_Demo-181717?style=for-the-badge&logo=github&logoColor=white)](https://crewcircle.vercel.app)
-
-</div>
-
----
-
-## 😩 Still Managing Rosters in WhatsApp?
-
-If you run a business with casual staff, you know the pain:
-- ❌ "Who's working Tuesday?" messages every week
-- ❌ Employees forgetting shifts (and blaming you)
-- ❌ Time theft — people clocking in from the car park
-- ❌ Spending Sunday night doing payroll manually
-- ❌ Compliance nightmares with Fair Work Australia
-
-**There's a better way.**
+[![Deploy by Vercel](https://img.shields.io/badge/Deploy-Vercel-000000?style=flat-square&logo=vercel)](https://vercel.com)
+[![License](https://img.shields.io/badge/License-Proprietary-red?style=flat-square)](LICENSE)
+[![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org/)
 
 ---
 
-## ✨ What CrewCircle Does For You
+## What is CrewCircle?
 
-### 📅 **Drag-and-Drop Rosters**
-- Build rosters in minutes, not hours
-- Copy last week's roster with one click
-- See conflicts instantly (double-bookings, unavailable staff)
-- Publish and notify everyone automatically
+CrewCircle is a **workforce management platform** built for Australian small and medium businesses. It helps you:
 
-**Time saved:** 3 hours/week → 15 minutes
+- 📅 **Create rosters** in minutes with drag-and-drop scheduling
+- ⏰ **Track time** with GPS-verified clock in/out
+- 👥 **Manage teams** with role-based access control
+- 📊 **Generate reports** for payroll and compliance
+- 🔔 **Notify employees** instantly when rosters change
 
-### ⏰ **GPS Time Clock**
-Staff can only clock in when they're actually at work:
-- Geofenced locations (no clocking in from home)
-- Photo verification (optional)
-- Works offline (syncs when connected)
-- Automatic break tracking
-
-**Stop time theft. Start trusting your data.**
-
-### 📊 **Automatic Timesheets**
-- Timesheets generate themselves from clock-in/out
-- Export to Xero, MYBO, QuickBooks
-- Award rate calculations (Fair Work compliant)
-- Overtime alerts
-
-**Payroll goes from 2 hours to 10 minutes.**
-
-### 👥 **Team Management**
-- Staff can set their availability
-- Swap shifts (with approval)
-- Document storage (certifications, visas)
-- Role-based access (Owner → Manager → Employee)
-
-**Your team manages themselves.**
+> **Data hosted in Sydney (AWS ap-southeast-2)** for AU compliance and fast performance.
 
 ---
 
-## 💰 Pricing That Makes Sense
+## Architecture
 
-| Plan | Cost | Best For |
-|------|------|----------|
-| **Free** | $0 | Up to 5 employees |
-| **Starter** | $5/employee/month | Growing teams |
-| **Business** | Custom | Multiple locations |
-
-**Start free. Upgrade when you need to.**
-
----
-
-## 🚀 Try It Now (Free)
-
-**No credit card. No commitment. Just smarter scheduling.**
-
-👉 **[crewcircle.co](https://crewcircle.co)**
-
-**Perfect for:**
-- Cafes & restaurants
-- Healthcare clinics
-- Retail stores
-- Events & venues
-- Any business with casual staff
-
----
-
-## 🎯 Built for Australian Businesses
-
-✅ **Fair Work Act** compliant  
-✅ **Single Touch Payroll** ready  
-✅ **Award rates** calculated automatically  
-✅ **ABN validation** built-in  
-✅ **Superannuation** tracking  
-
-**We speak Australian compliance so you don't have to.**
-
----
-
-## 🛠️ For Developers
-
-Want to customise it? White-label it? Here's how:
-
-```bash
-# Clone
-git clone https://github.com/Sensible-Analytics/crewcircle.git
-cd crewcircle
-
-# Install
-yarn install
-
-# Setup environment
-cp .env.example .env.local
-# Add your Supabase credentials
-
-# Run
-yarn dev
+```
+crewcircle/
+├── apps/
+│   ├── web/                    # Next.js 16 web application
+│   │   └── src/
+│   │       ├── app/           # Next.js App Router pages
+│   │       ├── components/    # Shared React components
+│   │       ├── features/      # Feature modules (roster, timesheets, team)
+│   │       ├── lib/           # Libraries
+│   │       │   ├── clerk/     # Clerk authentication + user service
+│   │       │   └── neon/      # NeonDB PostgreSQL client
+│   │       └── store/        # Zustand state management
+│   └── mobile/                # React Native mobile app (Expo)
+├── packages/
+│   └── validators/            # Zod validation schemas
+└── docs/                       # Documentation and wiki
 ```
 
-**Built with:**
-- Next.js 16 (web)
-- React Native + Expo (mobile)
-- Supabase (backend)
-- Tailwind CSS
+### Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Frontend (Web) | Next.js 16, React 19, TypeScript |
+| Mobile App | React Native, Expo |
+| Database | NeonDB (PostgreSQL) |
+| Authentication | Clerk |
+| Styling | Tailwind CSS v4 |
+| Payments | Stripe |
+| Deployment | Vercel (Web), EAS (Mobile) |
 
 ---
 
-## 💬 What Users Say
+## Quick Start
 
-**Cafe Owner, Sydney:**
-> "Went from 20 WhatsApp messages/day to zero. My staff actually check the app."
+### Prerequisites
 
-**Clinic Manager, Melbourne:**
-> "Saved me 3 hours every Sunday. Pays for itself in the first week."
+- Node.js 20+
+- Yarn package manager
+- NeonDB account (PostgreSQL)
+- Clerk account (authentication)
+- Stripe account (payments)
 
-**Retail Chain, Brisbane:**
-> "Managing 40 staff across 3 stores. Couldn't do it without CrewCircle."
+### Setup
+
+```bash
+# Install dependencies
+yarn install
+
+# Copy environment variables
+cp .env.example .env.local
+
+# Edit .env.local with your credentials
+```
+
+### Environment Variables
+
+```bash
+# NeonDB (PostgreSQL)
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+
+# Clerk Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_xxx
+CLERK_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/roster
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/roster
+
+# Stripe Payments
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_PRICE_ID=price_xxx
+
+# App
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+```
+
+### Development
+
+```bash
+# Start web app
+yarn dev
+
+# Open http://localhost:3000
+```
+
+### Demo Mode
+
+Visit `/demo` to try the app without signing up. Select a demo user role to explore features.
 
 ---
 
-## 🔒 Security
+## Features
 
-This repo uses automated secret scanning. 
+### 📅 Roster Management
+- Drag-and-drop scheduling with visual calendar
+- Automatic conflict detection
+- Copy previous week's roster
+- Publish rosters with one click
 
-See [SECURITY.md](SECURITY.md) for details.
+### ⏰ Time Tracking
+- GPS-verified clock in/out
+- Track actual hours vs rostered
+- Break tracking
+
+### 👥 Team Management
+- Employee invitation via email
+- Role-based access (Owner, Manager, Employee)
+- ABN validation for Australian businesses
+
+### 📊 Timesheets
+- Automatic timesheet generation
+- CSV export for payroll
+- Labour cost tracking
+
+### 💳 Billing
+- Free tier (up to 5 employees)
+- Starter plan ($4 + GST / employee / month)
+- Stripe-powered payments
 
 ---
 
-## 🤝 Built By
+## Deployment
 
-**[Sensible Analytics](https://www.sensibleanalytics.co)** — Building tools that actually work
+### Web (Vercel)
 
-Need custom workforce management for your industry? [Let's talk](mailto:hello@sensibleanalytics.co).
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel --prod
+```
+
+Add environment variables in Vercel dashboard.
+
+### Database (NeonDB)
+
+1. Create project at [neondb.tech](https://neondb.tech)
+2. Copy connection string
+3. Run migrations (schema in `docs/`)
 
 ---
 
-<div align="center">
+## Testing
 
-**Stop juggling WhatsApp groups.**
+```bash
+cd apps/web
 
-[🚀 Start Free](https://crewcircle.co) · [⭐ Star on GitHub](https://github.com/Sensible-Analytics/crewcircle)
+# Run E2E tests
+npx playwright test
 
-</div>
+# Run with UI
+npx playwright test --ui
+```
+
+---
+
+## Documentation
+
+See `docs/wiki/` for detailed guides:
+- [Getting Started](docs/wiki/Getting-Started.md)
+- [Roster Management](docs/wiki/Roster-Management.md)
+- [Time Tracking](docs/wiki/Time-Tracking.md)
+- [Team Management](docs/wiki/Team-Management.md)
+- [Australian Compliance](docs/wiki/Australian-Compliance.md)
+
+---
+
+## License
+
+Proprietary - All rights reserved by Sensible Analytics
+
+---
+
+Built with ❤️ in Australia

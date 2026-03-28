@@ -1,73 +1,48 @@
 import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/packages/supabase/src/client.server';
-import { createSupabaseAdminClient } from '@/packages/supabase/src/client.admin';
+import { clerkClient } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
+import { sql } from '@/lib/neon/client';
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-    const adminSupabase = createSupabaseAdminClient();
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { email, role } = await request.json();
 
-    // Validate input
     if (!email || !role) {
-      return NextResponse.json(
-        { error: 'Email and role are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Email and role are required' }, { status: 400 });
     }
 
-    // Check if user is authenticated
-    const supabaseClient = await supabase;
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
+    const profile = await sql`
+      SELECT tenant_id, role 
+      FROM profiles 
+      WHERE id = ${userId}
+    `;
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (profile.length === 0) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    // Get the user's profile to verify they are owner/manager and get tenant_id
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('tenant_id, role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'Profile not found or insufficient permissions' },
-        { status: 403 }
-      );
+    if (!['owner', 'manager'].includes(profile[0].role)) {
+      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    // Only owners and managers can invite
-    if (!['owner', 'manager'].includes(profile.role)) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
-    }
+    const tenantId = profile[0].tenant_id;
 
-    // CHECK FREE TIER LIMIT
-    // Get tenant data to check plan
-    const { data: tenant } = await supabase
-      .from('tenants')
-      .select('plan')
-      .eq('id', profile.tenant_id)
-      .single();
+    const tenant = await sql`
+      SELECT plan FROM tenants WHERE id = ${tenantId}
+    `;
 
-    if (tenant?.plan !== 'starter') {
-      // Count active employees
-      const { count } = await adminSupabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('tenant_id', profile.tenant_id)
-        .is('deleted_at', null);
+    if (tenant.length > 0 && tenant[0].plan !== 'starter') {
+      const employeeCount = await sql`
+        SELECT COUNT(*) as count FROM profiles 
+        WHERE tenant_id = ${tenantId} AND deleted_at IS NULL
+      `;
 
-      if (count && count >= 5) {
+      if (employeeCount[0]?.count >= 5) {
         return NextResponse.json(
           { error: 'Free tier limit reached (5 employees). Please upgrade to add more.' },
           { status: 403 }
@@ -75,32 +50,20 @@ export async function POST(request: Request) {
       }
     }
 
-    // Invite the user via Supabase Auth
-    const { data, error } = await adminSupabase.auth.admin.inviteUserByEmail(
-      email,
-      {
-        data: {
-          role: role,
-          tenant_id: profile.tenant_id,
-          invited_by: user.id,
-        },
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/accept-invite`,
-      }
-    );
+    const clerk = await clerkClient();
+    await clerk.invitations.createInvitation({
+      emailAddress: email,
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/accept-invite`,
+      publicMetadata: {
+        role: role,
+        tenant_id: tenantId,
+        invited_by: userId,
+      },
+    });
 
-    if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Invite error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -2,9 +2,8 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { Profile } from '@/types/profile';
 import { Shift } from '@/types/shift';
-import { createBrowserSupabaseClient } from '@/packages/supabase/src/client.browser';
-import { useAuth } from '@/packages/supabase/src/useAuth';
-import { copyShiftsToRoster } from '@/packages/supabase/src/shiftService';
+import { sql } from '@/lib/neon/client';
+import { copyShiftsToRoster } from '@/lib/neon/shiftService';
 
 export type RosterStatus = 'draft' | 'published' | 'archived';
 
@@ -12,7 +11,7 @@ export interface Roster {
   id: string;
   tenant_id: string;
   location_id: string;
-  week_start: string; // ISO date string
+  week_start: string;
   status: RosterStatus;
   published_at: string | null;
   published_by: string | null;
@@ -29,10 +28,10 @@ interface RosterState {
   operationError: string | null;
   isOperating: boolean;
   setProfiles: (profiles: Profile[]) => void;
-    setShifts: (shifts: Shift[]) => void;
-    setRoster: (roster: Roster | null) => void;
-    setSelectedWeekStart: (date: string) => void;
-    setLoading: (loading: boolean) => void;
+  setShifts: (shifts: Shift[]) => void;
+  setRoster: (roster: Roster | null) => void;
+  setSelectedWeekStart: (date: string) => void;
+  setLoading: (loading: boolean) => void;
   setOperationError: (error: string | null) => void;
   setIsOperating: (isOperating: boolean) => void;
   addProfile: (profile: Profile) => void;
@@ -59,13 +58,7 @@ export const useRosterStore = create<RosterState>()(
     setProfiles: (profiles) => set({ profiles }),
     setShifts: (shifts) => set({ shifts }),
     setRoster: (roster) => set({ roster }),
-    setSelectedWeekStart: (date) => {
-      set({ selectedWeekStart: date });
-      const { user, tenantId } = getAuthState();
-      if (user && tenantId) {
-        get().fetchCurrentRoster(tenantId, date);
-      }
-    },
+    setSelectedWeekStart: (date) => set({ selectedWeekStart: date }),
     setLoading: (loading) => set({ loading }),
     setOperationError: (error) => set({ operationError: error }),
     setIsOperating: (isOperating) => set({ isOperating }),
@@ -108,39 +101,22 @@ export const useRosterStore = create<RosterState>()(
 
       set({ isOperating: true, operationError: null });
       
-     try {
-         const supabase = createBrowserSupabaseClient();
-         const { error } = await supabase
-           .from('rosters')
-           .update({ 
-             status: 'published',
-             published_at: new Date().toISOString(),
-             published_by: roster.published_by || 'temp-user-id'
-           })
-           .eq('id', roster.id);
+      try {
+        await sql`
+          UPDATE rosters 
+          SET status = 'published', 
+              published_at = ${new Date().toISOString()},
+              published_by = ${roster.published_by || 'temp-user-id'}
+          WHERE id = ${roster.id}
+        `;
 
-         if (error) {
-           set({ operationError: `Failed to publish roster: ${error.message}` });
-           return false;
-         }
-
-         set({ roster: { ...roster, status: 'published', published_at: new Date().toISOString() } });
-
-         try {
-           await fetch('/functions/v1/on-roster-published', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ roster_id: roster.id }),
-           });
-         } catch (fetchError) {
-           console.warn('Failed to trigger on-roster-published edge function:', fetchError);
-         }
-
-         return true;
-       } catch (err: any) {
-         set({ operationError: `Unexpected error: ${err.message}` });
-         return false;
-       } finally {
+        set({ roster: { ...roster, status: 'published', published_at: new Date().toISOString() } });
+        return true;
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        set({ operationError: `Failed to publish roster: ${errorMessage}` });
+        return false;
+      } finally {
         set({ isOperating: false });
       }
     },
@@ -153,28 +129,22 @@ export const useRosterStore = create<RosterState>()(
 
       set({ isOperating: true, operationError: null });
       
-       try {
-         const supabase = createBrowserSupabaseClient();
-         const { error } = await supabase
-           .from('rosters')
-           .update({ 
-             status: 'draft',
-             published_at: null,
-             published_by: null
-           })
-           .eq('id', roster.id);
+      try {
+        await sql`
+          UPDATE rosters 
+          SET status = 'draft', 
+              published_at = NULL,
+              published_by = NULL
+          WHERE id = ${roster.id}
+        `;
 
-         if (error) {
-           set({ operationError: `Failed to unpublish roster: ${error.message}` });
-           return false;
-         }
-
-         set({ roster: { ...roster, status: 'draft', published_at: null, published_by: null } });
-         return true;
-       } catch (err: any) {
-         set({ operationError: `Unexpected error: ${err.message}` });
-         return false;
-       } finally {
+        set({ roster: { ...roster, status: 'draft', published_at: null, published_by: null } });
+        return true;
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        set({ operationError: `Failed to unpublish roster: ${errorMessage}` });
+        return false;
+      } finally {
         set({ isOperating: false });
       }
     },
@@ -191,136 +161,80 @@ export const useRosterStore = create<RosterState>()(
         const currentWeekStart = new Date(roster.week_start);
         const newWeekStart = new Date(currentWeekStart);
         newWeekStart.setDate(currentWeekStart.getDate() + 7);
+        const newWeekStartStr = newWeekStart.toISOString().split('T')[0];
         
-        const supabase = createBrowserSupabaseClient();
-        
-        const { data: existingRoster, error: fetchError } = await supabase
-          .from('rosters')
-          .select('id')
-          .eq('tenant_id', roster.tenant_id)
-          .eq('week_start', newWeekStart.toISOString().split('T')[0])
-          .single();
+        const existingRosters = await sql`
+          SELECT * FROM rosters 
+          WHERE tenant_id = ${roster.tenant_id} 
+          AND week_start = ${newWeekStartStr}
+        `;
 
-        if (fetchError && fetchError.code !== 'PGRST116') {
-          set({ operationError: `Error checking for existing roster: ${fetchError.message}` });
+        if (existingRosters.length > 0) {
+          const existingRoster = existingRosters[0] as Roster;
+          set({ roster: existingRoster });
+          return true;
+        }
+
+        const newRosters = await sql`
+          INSERT INTO rosters (tenant_id, location_id, week_start, status)
+          VALUES (${roster.tenant_id}, ${roster.location_id}, ${newWeekStartStr}, 'draft')
+          RETURNING *
+        `;
+
+        if (newRosters.length === 0) {
+          set({ operationError: 'Failed to create new roster' });
           return false;
         }
 
-        if (existingRoster) {
-          const { data: rosterData, error: rosterError } = await supabase
-            .from('rosters')
-            .select('*')
-            .eq('id', existingRoster.id)
-            .single();
+        const newRoster = newRosters[0] as Roster;
+        set({ roster: newRoster });
+        
+        const copiedShifts = await copyShiftsToRoster(roster.id, newRoster.id, 7);
+        console.log(`Copied ${copiedShifts.length} shifts to new roster`);
 
-          if (rosterError) {
-            set({ operationError: `Error loading existing roster: ${rosterError.message}` });
-            return false;
-          }
-
-          if (rosterData) {
-            set({ roster: rosterData });
-            return true;
-          }
-        }
-
-         const { data: newRoster, error: insertError } = await supabase
-           .from('rosters')
-           .insert([
-             {
-               tenant_id: roster.tenant_id,
-               location_id: roster.location_id,
-               week_start: newWeekStart.toISOString().split('T')[0],
-               status: 'draft',
-             }
-           ])
-           .select()
-           .single();
-
-         if (insertError) {
-           set({ operationError: `Failed to create new roster: ${insertError.message}` });
-           return false;
-         }
-
-         set({ roster: newRoster });
-         
-          try {
-            const copiedShifts = await copyShiftsToRoster(
-              // @ts-expect-error
-              supabase,
-              roster.id,
-              newRoster.id,
-              7
-            );
-            console.log(`Copied ${copiedShifts.length} shifts to new roster`);
-          } catch (copyError: any) {
-           set({ operationError: `Failed to copy shifts: ${copyError.message}` });
-           return false;
-         }
-
-         return true;
-       } catch (err: any) {
-         set({ operationError: `Unexpected error: ${err.message}` });
-         return false;
-       } finally {
+        return true;
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        set({ operationError: `Unexpected error: ${errorMessage}` });
+        return false;
+      } finally {
         set({ isOperating: false });
       }
     },
     fetchCurrentRoster: async (tenantId: string, weekStart: string) => {
       try {
         set({ loading: true });
-        const supabase = createBrowserSupabaseClient();
         
-        // Get or create a draft roster for the current week and tenant
-        let roster: any;
-        let rosterError: any;
-        
-        try {
-          const result = await supabase
-            .from('rosters')
-            .select('*')
-            .eq('tenant_id', tenantId)
-            .eq('week_start', weekStart)
-            .eq('status', 'draft')
-            .single();
-          roster = result.data;
-          rosterError = result.error;
-        } catch (e) {
-          rosterError = e;
+        const rosters = await sql`
+          SELECT * FROM rosters 
+          WHERE tenant_id = ${tenantId} 
+          AND week_start = ${weekStart}
+          AND status = 'draft'
+        `;
+
+        let roster: Roster | null = null;
+
+        if (rosters.length > 0) {
+          roster = rosters[0] as Roster;
+        } else {
+          const newRosters = await sql`
+            INSERT INTO rosters (tenant_id, location_id, week_start, status)
+            VALUES (${tenantId}, '00000000-0000-0000-0000-000000000001', ${weekStart}, 'draft')
+            RETURNING *
+          `;
+          
+          if (newRosters.length > 0) {
+            roster = newRosters[0] as Roster;
+          }
         }
 
-        if (rosterError && rosterError.code === 'PGRST116') {
-          // No roster found, create one
-          const { data: newRoster, error: insertError } = await supabase
-            .from('rosters')
-            .insert([
-              {
-                tenant_id: tenantId,
-                location_id: '00000000-0000-0000-0000-000000000001', // Default location - should be properly set
-                week_start: weekStart,
-                status: 'draft',
-              }
-            ])
-            .select();
-
-          if (insertError) throw insertError;
-          roster = newRoster?.[0];
-        } else if (rosterError) {
-          throw rosterError;
-        }
-
-        // Get shifts for this roster
-        const { data: shifts, error: shiftsError } = await supabase
-          .from('shifts')
-          .select('*')
-          .eq('roster_id', roster.id)
-          .is('deleted_at', null);
-
-        if (shiftsError) throw shiftsError;
+        const shifts = roster 
+          ? await sql`SELECT * FROM shifts WHERE roster_id = ${roster.id} AND deleted_at IS NULL`
+          : [];
 
         set({ 
-          roster: roster || null, 
-          shifts: shifts || [], 
+          roster, 
+          shifts: shifts as Shift[], 
           loading: false 
         });
       } catch (error) {
@@ -330,14 +244,3 @@ export const useRosterStore = create<RosterState>()(
     }
   }))
 );
-
-// Helper function to get auth state without causing circular dependencies
-function getAuthState() {
-  // This is a temporary solution - in a real app we'd use a proper store or context
-  // For now, we'll return empty values and rely on the component to call fetchCurrentRoster
-  // when auth data is available
-  return {
-    user: null,
-    tenantId: null
-  };
-}

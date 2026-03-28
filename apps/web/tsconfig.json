@@ -15,10 +15,7 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@types/*": ["./src/types/*"],
-      "@store/*": ["./src/store/*"],
-      "@/packages/*": ["../../packages/*"]
+      "@/*": ["./src/*"]
     },
     "plugins": [
       {
