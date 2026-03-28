@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#FFFBEB"/>
+  
+  <!-- Orange accent circles -->
+  <circle cx="100" cy="100" r="80" fill="#F59E0B" opacity="0.1"/>
+  <circle cx="1100" cy="530" r="100" fill="#F59E0B" opacity="0.1"/>
+  <circle cx="950" cy="80" r="60" fill="#F59E0B" opacity="0.15"/>
+  
+  <!-- Main content area -->
+  <rect x="100" y="150" width="1000" height="330" rx="20" fill="white" opacity="0.9"/>
+  
+  <!-- Logo circle -->
+  <circle cx="200" cy="315" r="60" fill="url(#logoGrad)"/>
+  <text x="200" y="335" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">C</text>
+  
+  <!-- Southern Cross stars -->
+  <circle cx="245" cy="265" r="5" fill="white"/>
+  <circle cx="255" cy="275" r="3" fill="white"/>
+  <circle cx="235" cy="275" r="3" fill="white"/>
+  <circle cx="250" cy="285" r="2.5" fill="white"/>
+  
+  <!-- Title -->
+  <text x="300" y="280" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#1F2937">Crew</text>
+  <text x="460" y="280" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#F59E0B">Circle</text>
+  
+  <!-- Subtitle -->
+  <text x="300" y="330" font-family="Arial, sans-serif" font-size="28" fill="#6B7280">Workforce Management for Australian SMBs</text>
+  
+  <!-- Features -->
+  <text x="300" y="380" font-family="Arial, sans-serif" font-size="22" fill="#9CA3AF">✓ Roster Scheduling  ✓ GPS Time Clock  ✓ Fair Work Compliant</text>
+  
+  <!-- Bottom badge -->
+  <rect x="100" y="520" width="250" height="50" rx="25" fill="#F59E0B"/>
+  <text x="225" y="552" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle">Start Free Trial</text>
+  
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F59E0B"/>
+      <stop offset="100%" style="stop-color:#D97706"/>
+    </linearGradient>
+  </defs>
+</svg>
