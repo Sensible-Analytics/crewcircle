@@ -1,5 +1,5 @@
 {
-  "buildCommand": "yarn build",
+  "buildCommand": "yarn workspace web build && cp -r apps/web/.next .",
   "installCommand": "yarn install --frozen-lockfile",
   "framework": "nextjs",
   "regions": ["syd1"]
