@@ -1,0 +1,22 @@
+appId: ${MAESTRO_APP_ID}
+---
+- launchApp
+
+- tapOn:
+    text: "Roster"
+    timeout: 10000
+
+- assertVisible:
+    id: "week-heading"
+    timeout: 5000
+
+- takeScreenshot: .sisyphus/evidence/mobile-roster-view.png
+
+- tapOn:
+    id: "next-week-button"
+
+- assertVisible:
+    text: "No shifts scheduled"
+    timeout: 5000
+
+- takeScreenshot: .sisyphus/evidence/mobile-roster-empty.png

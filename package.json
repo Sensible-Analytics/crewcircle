@@ -4,7 +4,7 @@
   "description": "CrewCircle - Australian workforce management solution for shift-based businesses",
   "private": true,
   "author": {
-    "name": "Sensible Analytics",
+    "name": "CrewCircle",
     "email": "hello@crewcircle.co",
     "url": "https://crewcircle.co"
   },
@@ -41,6 +41,7 @@
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@playwright/test": "^1.59.1",
     "@tanstack/react-virtual": "^3.13.23",
     "date-fns": "^4.1.0",
     "immer": "^11.1.4",

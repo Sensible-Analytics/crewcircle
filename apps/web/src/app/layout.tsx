@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     'employee management',
     'shift planning',
   ],
-  authors: [{ name: 'Sensible Analytics', url: 'https://sensible-analytics.com' }],
-  creator: 'Sensible Analytics',
-  publisher: 'Sensible Analytics',
+  authors: [{ name: 'CrewCircle', url: 'https://crewcircle.co' }],
+  creator: 'CrewCircle',
+  publisher: 'CrewCircle',
   openGraph: {
     type: 'website',
     locale: 'en_AU',

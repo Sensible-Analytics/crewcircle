@@ -70,7 +70,7 @@ crewcircle/
 ### Prerequisites
 
 - Node.js 20+
-- Yarn package manager
+- pnpm package manager
 - NeonDB account (PostgreSQL)
 - Clerk account (authentication)
 - Stripe account (payments)
@@ -79,7 +79,7 @@ crewcircle/
 
 ```bash
 # Install dependencies
-yarn install
+pnpm install
 
 # Copy environment variables
 cp .env.example .env.local
@@ -115,7 +115,7 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 
 ```bash
 # Start web app
-yarn dev
+pnpm --filter web dev
 
 # Open http://localhost:3000
 ```
@@ -194,18 +194,13 @@ npx playwright test --ui
 
 ## Documentation
 
-See `docs/wiki/` for detailed guides:
-- [Getting Started](docs/wiki/Getting-Started.md)
-- [Roster Management](docs/wiki/Roster-Management.md)
-- [Time Tracking](docs/wiki/Time-Tracking.md)
-- [Team Management](docs/wiki/Team-Management.md)
-- [Australian Compliance](docs/wiki/Australian-Compliance.md)
+See [docs/README.md](docs/README.md) for the full documentation index.
 
 ---
 
 ## License
 
-Proprietary - All rights reserved by Sensible Analytics
+Proprietary - All rights reserved by CrewCircle
 
 ---
 

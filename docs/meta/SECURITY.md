@@ -97,4 +97,4 @@ We maintain a list of past security advisories in our [Security Advisories](http
 - 📧 Email: [security@sensibleanalytics.co](mailto:security@sensibleanalytics.co)
 - 🔐 PGP Key: [Available upon request]
 
-Thank you for helping keep Sensible Analytics and our users safe!
+Thank you for helping keep CrewCircle and our users safe!
