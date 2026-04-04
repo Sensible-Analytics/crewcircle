@@ -4,7 +4,7 @@
   "description": "CrewCircle - Australian workforce management solution for shift-based businesses",
   "private": true,
   "author": {
-    "name": "Sensible Analytics",
+    "name": "CrewCircle",
     "email": "hello@crewcircle.co",
     "url": "https://crewcircle.co"
   },
@@ -27,20 +27,19 @@
     "react-native",
     "expo"
   ],
-  "workspaces": [
-    "apps/web"
-  ],
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "yarn workspace web dev",
-    "build": "yarn workspace web build",
-    "build:all": "yarn workspaces foreach -A run build",
-    "lint": "yarn workspaces foreach -A run lint",
-    "test": "yarn workspaces foreach -A run test",
-    "clean": "yarn workspaces foreach -pt run clean 2>/dev/null || true"
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter web build",
+    "build:all": "pnpm -r run build",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "clean": "pnpm -r run clean 2>/dev/null || true"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
+    "@playwright/test": "^1.59.1",
     "@tanstack/react-virtual": "^3.13.23",
     "date-fns": "^4.1.0",
     "immer": "^11.1.4",
@@ -53,7 +52,6 @@
     "vitest": "^4.1.2"
   },
   "engines": {
-    "node": ">=20",
-    "yarn": ">=1.22"
+    "node": ">=20.9.0"
   }
 }

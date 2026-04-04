@@ -33,7 +33,6 @@ interface ShiftFormData {
   notes: string;
 }
 import { useAuth } from '@/lib/clerk/useAuth';
-import { sql } from '@/lib/neon/client';
 import { z } from 'zod';
 import { shiftSchema } from '@/lib/validators/shift';
 import { detectConflicts } from '@/lib/validators/conflicts';
@@ -202,7 +201,7 @@ const RosterGrid: React.FC = () => {
      const selectedWeekStart: string = store.selectedWeekStart;
     const setSelectedWeekStart = store.setSelectedWeekStart;
     const loading: boolean = store.loading;
-    let roster: Roster | null = store.roster;
+    const roster: Roster | null = store.roster;
     const publishRoster: () => Promise<boolean> = store.publishRoster;
    const unpublishRoster: () => Promise<boolean> = store.unpublishRoster;
    const copyForwardRoster: () => Promise<boolean> = store.copyForwardRoster;
@@ -224,14 +223,13 @@ const RosterGrid: React.FC = () => {
     
     fetchCurrentRoster(tenantId, selectedWeekStart);
     
-    sql`SELECT * FROM profiles WHERE tenant_id = ${tenantId}`
-      .then(data => setProfiles(data as Profile[]))
+    fetch(`/api/profiles?tenantId=${tenantId}`)
+      .then(res => res.json())
+      .then(data => setProfiles(data.profiles as Profile[]))
       .catch(console.error);
   }, [tenantId, selectedWeekStart, authLoading, fetchCurrentRoster, setProfiles]);
 
-  if (!isDemoMode) {
-    useRosterRealtime();
-  }
+  useRosterRealtime();
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragOverlay, setDragOverlay] = useState<React.ReactNode | null>(null);
@@ -311,19 +309,22 @@ const RosterGrid: React.FC = () => {
            newShifts[shiftIndex] = updatedShift;
            setShifts(newShifts);
            
-           // Persist to database
-           try {
-             await sql`
-               UPDATE shifts 
-               SET 
-                 profile_id = ${targetEmployeeId},
-                 start_time = ${newStartTime.toISOString()},
-                 end_time = ${newEndTime.toISOString()}
-               WHERE id = ${shiftId}
-             `;
-           } catch (err) {
-             console.error('Failed to update shift:', err);
-           }
+            // Persist to database
+            try {
+              await fetch('/api/roster', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: 'update-shift',
+                  shiftId,
+                  profileId: targetEmployeeId,
+                  startTime: newStartTime.toISOString(),
+                  endTime: newEndTime.toISOString(),
+                }),
+              });
+            } catch (err) {
+              console.error('Failed to update shift:', err);
+            }
          }
        }
      }
@@ -503,37 +504,31 @@ const RosterGrid: React.FC = () => {
       try {
         setIsSaving(true);
 
-        // Get or create a draft roster for the current week and tenant
-        const rosters = await sql`
-          SELECT id FROM rosters 
-          WHERE tenant_id = ${tenantId} 
-          AND week_start = ${selectedWeekStart}
-          AND status = 'draft'
-        `;
-
-        let rosterId: string;
-
-        if (rosters.length > 0) {
-          rosterId = rosters[0].id;
-        } else {
-          const newRosters = await sql`
-            INSERT INTO rosters (tenant_id, location_id, week_start, status)
-            VALUES (${tenantId}, '00000000-0000-0000-0000-000000000001', ${selectedWeekStart}, 'draft')
-            RETURNING id
-          `;
-          if (newRosters.length === 0) throw new Error('Failed to create roster');
-          rosterId = newRosters[0].id;
+        if (!roster?.id) {
+          console.error('No roster ID to save to');
+          return;
         }
 
-        // Delete existing shifts
-        await sql`DELETE FROM shifts WHERE roster_id = ${rosterId}`;
+        const response = await fetch('/api/roster', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save-shifts',
+            tenantId,
+            rosterId: roster.id,
+            shifts: shifts.map(s => ({
+              profile_id: s.profile_id,
+              start_time: s.start_time,
+              end_time: s.end_time,
+              role_label: s.role_label,
+              notes: s.notes,
+            })),
+          }),
+        });
 
-        // Insert new shifts
-        for (const shift of shifts) {
-          await sql`
-            INSERT INTO shifts (tenant_id, roster_id, profile_id, start_time, end_time, role_label, notes)
-            VALUES (${tenantId}, ${rosterId}, ${shift.profile_id}, ${shift.start_time}, ${shift.end_time}, ${shift.role_label}, ${shift.notes})
-          `;
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to save roster');
         }
 
         console.log('Roster saved successfully');
@@ -555,7 +550,7 @@ const RosterGrid: React.FC = () => {
     return () => {
       clearTimeout(saveTimeout);
     };
-  }, [shifts, selectedWeekStart, user, tenantId, authLoading, isSaving]);
+  }, [shifts, selectedWeekStart, user, tenantId, authLoading, isSaving, roster?.id]);
 
   // Handle saving a shift from the modal
   const handleSaveShift = async (shiftData: z.infer<typeof shiftCreationSchema>) => {
@@ -593,25 +588,26 @@ const RosterGrid: React.FC = () => {
         }
       }
 
-       // Create the shift via NeonDB
-        const newShifts = await sql`
-          INSERT INTO shifts (tenant_id, roster_id, profile_id, start_time, end_time, role_label, notes)
-          VALUES (
-            ${tenantId || ""},
-            ${roster?.id || null},
-            ${shiftData.employeeId},
-            ${shiftData.startTime},
-            ${shiftData.endTime},
-            ${shiftData.roleLabel || null},
-            ${shiftData.notes || null}
-          )
-          RETURNING *
-        `;
+       // Create the shift via API route
+        const response = await fetch('/api/roster', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'create-shift',
+            tenantId,
+            rosterId: roster?.id || null,
+            profileId: shiftData.employeeId,
+            startTime: shiftData.startTime,
+            endTime: shiftData.endTime,
+            roleLabel: shiftData.roleLabel || null,
+            notes: shiftData.notes || null,
+          }),
+        });
 
-        if (newShifts.length === 0) throw new Error('Failed to create shift');
-        const newShift = newShifts[0];
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Failed to create shift');
 
-        setShifts([...shifts, newShift as Shift]);
+        setShifts([...shifts, result.shift as Shift]);
 
       // Close the modal
       setOpenShiftModal(false);

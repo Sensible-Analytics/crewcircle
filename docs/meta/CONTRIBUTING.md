@@ -1,6 +1,6 @@
-# Contributing to Sensible Analytics
+# Contributing to CrewCircle
 
-First off, thank you for considering contributing to Sensible Analytics! It's people like you that make our tools better for everyone.
+First off, thank you for considering contributing to CrewCircle! It's people like you that make our tools better for everyone.
 
 ## 📋 Table of Contents
 

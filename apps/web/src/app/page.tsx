@@ -751,8 +751,8 @@ export default function LandingPage() {
             <p className="text-sm">© 2026 CrewCircle. Data hosted in Sydney, Australia.</p>
             <p className="text-sm">
               Made with ❤️ by{" "}
-              <a href="https://sensible-analytics.com" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300">
-                Sensible Analytics
+              <a href="https://crewcircle.co" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300">
+                CrewCircle
               </a>
             </p>
           </div>
