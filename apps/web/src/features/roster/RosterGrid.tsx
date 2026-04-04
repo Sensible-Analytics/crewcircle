@@ -201,7 +201,7 @@ const RosterGrid: React.FC = () => {
      const selectedWeekStart: string = store.selectedWeekStart;
     const setSelectedWeekStart = store.setSelectedWeekStart;
     const loading: boolean = store.loading;
-    let roster: Roster | null = store.roster;
+    const roster: Roster | null = store.roster;
     const publishRoster: () => Promise<boolean> = store.publishRoster;
    const unpublishRoster: () => Promise<boolean> = store.unpublishRoster;
    const copyForwardRoster: () => Promise<boolean> = store.copyForwardRoster;
@@ -229,9 +229,7 @@ const RosterGrid: React.FC = () => {
       .catch(console.error);
   }, [tenantId, selectedWeekStart, authLoading, fetchCurrentRoster, setProfiles]);
 
-  if (!isDemoMode) {
-    useRosterRealtime();
-  }
+  useRosterRealtime();
   
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragOverlay, setDragOverlay] = useState<React.ReactNode | null>(null);
