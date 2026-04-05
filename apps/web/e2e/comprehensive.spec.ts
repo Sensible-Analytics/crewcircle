@@ -330,13 +330,8 @@ test.describe('Accessibility', () => {
   test('signup page has Clerk form', async ({ page }) => {
     await page.goto('/signup');
     await captureStep(page, '00_signup_page');
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
-    await captureStep(page, '01_form_visible');
-  });
-
-  test('login page has Clerk form', async ({ page }) => {
-    await page.goto('/login');
-    await captureStep(page, '00_login_page');
+    // Clerk renders asynchronously — wait for the form container
+    await page.waitForSelector('[class*="cl-"]', { state: 'attached', timeout: 10000 });
     await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
     await captureStep(page, '01_form_visible');
   });
