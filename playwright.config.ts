@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./tests/web",
+  testDir: "./apps/web/e2e",
   timeout: 60000,
   expect: { timeout: 15000 },
   fullyParallel: false,
@@ -9,8 +9,8 @@ export default defineConfig({
   workers: 1,
   reporter: [
     ["list"],
-    ["json", { outputFile: ".sisyphus/evidence/playwright-results.json" }],
-    ["html", { outputFolder: "playwright-report" }],
+    ["json", { outputFile: "apps/web/.sisyphus/evidence/playwright-results.json" }],
+    ["html", { outputFolder: "apps/web/playwright-report" }],
   ],
   use: {
     baseURL: process.env.TEST_BASE_URL || "https://crewcircle.co",
