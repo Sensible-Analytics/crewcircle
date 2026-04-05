@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+<<<<<<< HEAD
     branches: [main, master]
   pull_request:
     branches: [main, master]
@@ -18,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [18.x, 20.x]
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -27,34 +28,104 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+=======
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+jobs:
+  build-and-test:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        platform: [ios, android]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          run_install: false
-
-      - name: Get pnpm store path
-        id: pnpm-cache
-        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-store-
+          node-version: "20.19.0"
+          cache: "npm"
+>>>>>>> origin/main
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
+<<<<<<< HEAD
       - name: Run linter
-        run: pnpm --filter web lint
+        run: npm run lint --if-present
 
       - name: Run type check
-        run: pnpm --filter web type-check --if-present
+        run: npm run type-check --if-present
 
       - name: Run tests
-        run: pnpm --filter web test --if-present
+        run: npm test --if-present
 
       - name: Build
-        run: pnpm --filter web build
+        run: npm run build --if-present
+=======
+      - name: Setup Ruby and CocoaPods (iOS only)
+        if: matrix.platform == 'ios'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.7"
+
+      - name: Install CocoaPods (iOS only)
+        if: matrix.platform == 'ios'
+        run: |
+          cd ios
+          pod install
+          cd ..
+
+      - name: Setup Java (Android only)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: Setup Android SDK (Android only)
+        if: matrix.platform == 'android'
+        uses: AndroidSetup@v1
+        with:
+          api-level: 34
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run tsc
+
+      - name: Run unit tests
+        run: npm run test:ci
+
+      - name: Build app (iOS)
+        if: matrix.platform == 'ios'
+        run: npm run detox:build:ios
+
+      - name: Build app (Android)
+        if: matrix.platform == 'android'
+        run: npm run detox:build:android
+
+      - name: Run E2E tests (iOS)
+        if: matrix.platform == 'ios'
+        run: npm run detox:test -- --configuration ios.sim
+
+      - name: Run E2E tests (Android)
+        if: matrix.platform == 'android'
+        run: npm run detox:test -- --configuration android.emu
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: |
+            ./reports/
+            ./e2e/screenshots/
+            ./coverage/
+>>>>>>> origin/main
