@@ -66,7 +66,8 @@ test.describe('Landing Page', () => {
     const pricingCTA = page.locator('a:has-text("Start for Free")').first();
     await pricingCTA.click();
     await expect(page).toHaveURL(/\/signup/);
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
+    await page.waitForSelector('[class*="cl-"]', { state: 'attached', timeout: 10000 });
+    await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
     await captureStep(page, '07_pricing_cta_navigated');
   });
 
@@ -323,18 +324,18 @@ test.describe('Responsive Design', () => {
 });
 
 test.describe('Accessibility', () => {
-  test.skip('signup page has Clerk form', async ({ page }) => {
-    // Clerk renders in shadow DOM - flaky visibility checks
+  test('signup page has Clerk form', async ({ page }) => {
     await page.goto('/signup');
     await captureStep(page, '00_signup_page');
+    // Clerk renders asynchronously - wait for it to be visible
     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
     await captureStep(page, '01_form_visible');
   });
 
-  test.skip('signup form submit button is accessible', async ({ page }) => {
-    // Clerk renders in shadow DOM - flaky visibility checks
+  test('signup form submit button is accessible', async ({ page }) => {
     await page.goto('/signup');
     await captureStep(page, '00_signup_page');
+    // Clerk buttons may have aria-hidden, check the container is interactive instead
     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
     await captureStep(page, '01_submit_button');
   });
