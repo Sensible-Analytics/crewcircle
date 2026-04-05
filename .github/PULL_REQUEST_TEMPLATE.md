@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## Summary
 
 <!-- Provide a brief summary of the changes made in this PR -->
@@ -68,3 +69,9 @@ Fixes # (issue number)
 **Reviewers:** @Sensible-Analytics/engineering
 
 **Related Issues:** Fixes #, Relates to #
+=======
+# Pull Request Template
+
+[Same content as before]
+
+>>>>>>> origin/main

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Dependencies
 node_modules
 
@@ -42,10 +43,106 @@ Thumbs.db
 .env*.local
 
 # Logs
+=======
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+*.lcov
+*.lcov.info
+*.gcov
+*.gcda
+*.gcno
+
+# ios
+/Pods
+/*.xcworkspace
+ios/.xcode.env.local
+ios/CardScannerApp.xcworkspace/
+ios/Podfile.lock
+
+# android
+/.gradle
+/android/.gradle
+/**/build
+/*/gradle-app.setting
+/android/app/src/main/assets/index.android.bundle
+
+# Avoid ignoring Gradle wrapper jar file (.jar) in gradle-wrapper.properties
+!/gradle-wrapper.jar
+
+# Android build artifacts
+android/settings.gradle.backup*
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Expo
+.expo
+webpack.config.js
+
+# Watchman
+.watchmanconfig
+
+# CodePush
+.codepush/
+
+# Symbolication
+/symbols/
+
+# Firebase
+/firebase.json
+
+# Xcode
+ DerivedData/
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+![Aa]*.xcassets
+
+# CocoaPods
+Pods/
+
+# Buck
+.buckd/
+*.asc
+
+# fb-schema/
+*fb-schema*.txt
+
+# RNCLI
+.rncache/
+
+# Superseded by React Native 0.65
+/.expo/
+
+# Additional files to ignore
+.sisyphus/
+.superset/
+.vscode/
+AGENTS.md
+Gemfile
+Gemfile.lock
+docs/
+fastlane/
+scripts/
+setup-and-verify.sh
+vendor/
+>>>>>>> origin/main
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+<<<<<<< HEAD
 
 # Testing
 coverage/
@@ -74,3 +171,7 @@ test-results/
 *.temp
 .vercel
 .env.vercel
+=======
+.pnpm-debug.log*
+yarn.lock
+>>>>>>> origin/main
