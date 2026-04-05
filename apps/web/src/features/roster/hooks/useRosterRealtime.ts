@@ -1,31 +1,16 @@
 import { useEffect } from 'react';
 import { useRosterStore } from '@/store/rosterStore';
-import { sql } from '@/lib/neon/client';
 
 /**
- * Hook to refresh roster data periodically
- * In demo mode, this just refreshes the data from NeonDB
+ * Hook to refresh roster data periodically.
+ * NOTE: Currently disabled — direct sql calls fail in browser.
+ * Roster data is fetched via API routes instead.
  */
 export const useRosterRealtime = () => {
-  const { roster, setShifts, setRoster, fetchCurrentRoster } = useRosterStore();
+  const { roster } = useRosterStore();
 
   useEffect(() => {
     if (!roster?.id) return;
-
-    const rosterId = roster.id;
-
-    const refreshData = async () => {
-      const shifts = await sql`SELECT * FROM shifts WHERE roster_id = ${rosterId} AND deleted_at IS NULL`;
-      if (shifts.length > 0) {
-        setShifts(shifts as any[]);
-      }
-
-      const rosters = await sql`SELECT * FROM rosters WHERE id = ${rosterId}`;
-      if (rosters.length > 0) {
-        setRoster(rosters[0] as any);
-      }
-    };
-
-    refreshData();
-  }, [roster?.id, setShifts, setRoster]);
+    // TODO: Implement realtime refresh via API endpoint instead of direct sql
+  }, [roster?.id]);
 };

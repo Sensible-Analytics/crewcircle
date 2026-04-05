@@ -2,8 +2,6 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { Profile } from '@/types/profile';
 import { Shift } from '@/types/shift';
-import { sql } from '@/lib/neon/client';
-import { copyShiftsToRoster } from '@/lib/neon/shiftService';
 
 export type RosterStatus = 'draft' | 'published' | 'archived';
 
@@ -102,13 +100,16 @@ export const useRosterStore = create<RosterState>()(
       set({ isOperating: true, operationError: null });
       
       try {
-        await sql`
-          UPDATE rosters 
-          SET status = 'published', 
-              published_at = ${new Date().toISOString()},
-              published_by = ${roster.published_by || 'temp-user-id'}
-          WHERE id = ${roster.id}
-        `;
+        const response = await fetch('/api/roster', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'publish', rosterId: roster.id }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to publish roster');
+        }
 
         set({ roster: { ...roster, status: 'published', published_at: new Date().toISOString() } });
         return true;
@@ -130,13 +131,16 @@ export const useRosterStore = create<RosterState>()(
       set({ isOperating: true, operationError: null });
       
       try {
-        await sql`
-          UPDATE rosters 
-          SET status = 'draft', 
-              published_at = NULL,
-              published_by = NULL
-          WHERE id = ${roster.id}
-        `;
+        const response = await fetch('/api/roster', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unpublish', rosterId: roster.id }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to unpublish roster');
+        }
 
         set({ roster: { ...roster, status: 'draft', published_at: null, published_by: null } });
         return true;
@@ -158,40 +162,24 @@ export const useRosterStore = create<RosterState>()(
       set({ isOperating: true, operationError: null });
       
       try {
-        const currentWeekStart = new Date(roster.week_start);
-        const newWeekStart = new Date(currentWeekStart);
-        newWeekStart.setDate(currentWeekStart.getDate() + 7);
-        const newWeekStartStr = newWeekStart.toISOString().split('T')[0];
-        
-        const existingRosters = await sql`
-          SELECT * FROM rosters 
-          WHERE tenant_id = ${roster.tenant_id} 
-          AND week_start = ${newWeekStartStr}
-        `;
+        const response = await fetch('/api/roster', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'copy-forward',
+            tenantId: roster.tenant_id,
+            weekStart: roster.week_start,
+            rosterId: roster.id,
+          }),
+        });
 
-        if (existingRosters.length > 0) {
-          const existingRoster = existingRosters[0] as Roster;
-          set({ roster: existingRoster });
-          return true;
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || 'Failed to copy forward');
         }
 
-        const newRosters = await sql`
-          INSERT INTO rosters (tenant_id, location_id, week_start, status)
-          VALUES (${roster.tenant_id}, ${roster.location_id}, ${newWeekStartStr}, 'draft')
-          RETURNING *
-        `;
-
-        if (newRosters.length === 0) {
-          set({ operationError: 'Failed to create new roster' });
-          return false;
-        }
-
-        const newRoster = newRosters[0] as Roster;
-        set({ roster: newRoster });
-        
-        const copiedShifts = await copyShiftsToRoster(roster.id, newRoster.id, 7);
-        console.log(`Copied ${copiedShifts.length} shifts to new roster`);
-
+        const data = await response.json();
+        set({ roster: data.roster as Roster });
         return true;
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -205,36 +193,18 @@ export const useRosterStore = create<RosterState>()(
       try {
         set({ loading: true });
         
-        const rosters = await sql`
-          SELECT * FROM rosters 
-          WHERE tenant_id = ${tenantId} 
-          AND week_start = ${weekStart}
-          AND status = 'draft'
-        `;
+        const response = await fetch(`/api/roster?tenantId=${tenantId}&weekStart=${weekStart}`);
+        const data = await response.json();
 
-        let roster: Roster | null = null;
-
-        if (rosters.length > 0) {
-          roster = rosters[0] as Roster;
-        } else {
-          const newRosters = await sql`
-            INSERT INTO rosters (tenant_id, location_id, week_start, status)
-            VALUES (${tenantId}, '00000000-0000-0000-0000-000000000001', ${weekStart}, 'draft')
-            RETURNING *
-          `;
-          
-          if (newRosters.length > 0) {
-            roster = newRosters[0] as Roster;
-          }
+        if (!response.ok) {
+          console.error('Failed to fetch roster:', data.error);
+          set({ loading: false });
+          return;
         }
 
-        const shifts = roster 
-          ? await sql`SELECT * FROM shifts WHERE roster_id = ${roster.id} AND deleted_at IS NULL`
-          : [];
-
         set({ 
-          roster, 
-          shifts: shifts as Shift[], 
+          roster: data.roster as Roster | null, 
+          shifts: data.shifts as Shift[], 
           loading: false 
         });
       } catch (error) {

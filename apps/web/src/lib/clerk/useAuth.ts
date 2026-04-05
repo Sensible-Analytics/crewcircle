@@ -107,7 +107,7 @@ export const useAuth = () => {
     user,
     tenantId,
     role,
-    isLoading: !isUserLoaded || isLoading,
+    isLoading: isDemoMode ? isLoading : !isUserLoaded || isLoading,
     isDemoMode,
     signOut,
     resetPasswordEmail,

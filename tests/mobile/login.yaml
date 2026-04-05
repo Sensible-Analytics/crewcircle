@@ -1,0 +1,31 @@
+appId: ${MAESTRO_APP_ID}
+---
+- launchApp:
+    clearState: true
+
+- assertVisible:
+    text: "Log In"
+    timeout: 10000
+
+- tapOn:
+    text: "Email"
+- inputText: ${MOBILE_TEST_EMAIL}
+
+- tapOn:
+    text: "Password"
+- inputText: ${MOBILE_TEST_PASSWORD}
+
+- tapOn:
+    text: "Log In"
+
+- assertVisible:
+    text: "Roster"
+    timeout: 15000
+
+- assertVisible:
+    text: "Time Clock"
+
+- assertVisible:
+    text: "Profile"
+
+- takeScreenshot: .sisyphus/evidence/mobile-login-success.png

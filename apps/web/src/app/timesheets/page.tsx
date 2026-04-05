@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { useAuth } from '@/lib/clerk/useAuth';
-import { sql } from '@/lib/neon/client';
 
 interface TimesheetEntry {
   profile_id: string;
@@ -21,7 +20,7 @@ interface TimesheetEntry {
 }
 
 export default function TimesheetsPage() {
-  const { user, tenantId, isLoading: authLoading } = useAuth();
+  const { user, tenantId, isDemoMode, isLoading: authLoading } = useAuth();
   const [entries, setEntries] = useState<TimesheetEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState({
@@ -37,51 +36,16 @@ export default function TimesheetsPage() {
       const start = dateRange.start.toISOString();
       const end = dateRange.end.toISOString();
       
-      const data = await sql`
-        WITH paired_events AS (
-          SELECT
-            ce.profile_id,
-            p.first_name,
-            p.last_name,
-            p.email,
-            DATE(ce.recorded_at AT TIME ZONE 'Australia/Melbourne') as work_date,
-            MIN(CASE WHEN ce.type = 'clock_in' THEN ce.recorded_at END) as clock_in,
-            MAX(CASE WHEN ce.type = 'clock_out' THEN ce.recorded_at END) as clock_out,
-            MAX(ce.is_within_geofence) as is_within_geofence,
-            MAX(ce.approved_at) as approved_at,
-            MAX(ce.approved_by) as approved_by,
-            MAX(l.name) as location_name
-          FROM clock_events ce
-          JOIN profiles p ON p.id = ce.profile_id
-          LEFT JOIN locations l ON l.id = ce.location_id
-          WHERE p.tenant_id = ${tenantId}
-            AND ce.deleted_at IS NULL
-            AND ce.recorded_at >= ${start}
-            AND ce.recorded_at < ${end}
-          GROUP BY ce.profile_id, p.first_name, p.last_name, p.email, work_date
-        )
-        SELECT 
-          profile_id,
-          first_name,
-          last_name,
-          email,
-          work_date,
-          clock_in,
-          clock_out,
-          CASE 
-            WHEN clock_in IS NOT NULL AND clock_out IS NOT NULL 
-            THEN ROUND(EXTRACT(EPOCH FROM (clock_out - clock_in)) / 3600, 2)
-            ELSE NULL 
-          END as total_hours,
-          is_within_geofence,
-          approved_at,
-          approved_by,
-          location_name
-        FROM paired_events
-        ORDER BY last_name, first_name, work_date
-      `;
+      const response = await fetch(
+        `/api/timesheets?tenantId=${tenantId}&start=${start}&end=${end}`
+      );
       
-      setEntries(data as TimesheetEntry[]);
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheets');
+      }
+      
+      const data = await response.json();
+      setEntries(data.entries || []);
     } catch (error) {
       console.error('Error fetching timesheet entries:', error);
     } finally {
@@ -108,7 +72,7 @@ export default function TimesheetsPage() {
   }, [entries]);
 
   const handleApprove = async (profileId: string, workDate: string) => {
-    if (!user) return;
+    if (!tenantId) return;
     try {
       await fetch('/api/timesheets/approve', {
         method: 'POST',
@@ -122,7 +86,7 @@ export default function TimesheetsPage() {
   };
 
   const handleApproveAll = async () => {
-    if (!user) return;
+    if (!tenantId) return;
     const unapproved = entries.filter(e => !e.approved_at);
     for (const entry of unapproved) {
       await handleApprove(entry.profile_id, entry.work_date);
@@ -160,8 +124,12 @@ export default function TimesheetsPage() {
     URL.revokeObjectURL(url);
   };
 
-  if (authLoading || !user) {
+  if (authLoading || (!tenantId && !isDemoMode)) {
     return <div className="p-6">Loading...</div>;
+  }
+
+  if (!tenantId) {
+    return <div className="p-6">Not authenticated</div>;
   }
 
   const unapprovedCount = entries.filter(e => !e.approved_at).length;
@@ -287,3 +255,4 @@ export default function TimesheetsPage() {
     </div>
   );
 }
+

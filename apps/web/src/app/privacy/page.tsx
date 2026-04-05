@@ -5,7 +5,7 @@ export default function PrivacyPolicy() {
       <p>Last Updated: March 23, 2026</p>
       
       <h2>1. Introduction</h2>
-      <p>CrewCircle ("we", "us", or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.</p>
+      <p>CrewCircle (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our platform.</p>
       
       <h2>2. Australian Privacy Principles</h2>
       <p>We comply with the Australian Privacy Principles (APPs) contained in the Privacy Act 1988 (Cth). We take reasonable steps to ensure that personal information we collect is handled in a transparent and secure manner.</p>

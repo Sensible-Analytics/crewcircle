@@ -1,16 +1,32 @@
-import { NextResponse } from 'next/server';
-import Stripe from 'stripe';
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
+
+const getStripe = () => {
+  if (
+    !process.env.STRIPE_SECRET_KEY ||
+    process.env.STRIPE_SECRET_KEY === "sk_test_placeholder"
+  ) {
+    return null;
+  }
+  return new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2026-03-25.dahlia" as const,
+  });
+};
 
 export async function POST(req: Request) {
-  try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2026-03-25.dahlia' as const,
-    });
+  const stripe = getStripe();
+  if (!stripe) {
+    return NextResponse.json(
+      { error: "Stripe not configured" },
+      { status: 503 },
+    );
+  }
 
+  try {
     const { tenantId, email } = await req.json();
-    
+
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card', 'au_becs_debit'],
+      payment_method_types: ["card", "au_becs_debit"],
       customer_email: email,
       line_items: [
         {
@@ -18,7 +34,7 @@ export async function POST(req: Request) {
           quantity: 1,
         },
       ],
-      mode: 'subscription',
+      mode: "subscription",
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings/billing?success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL}/settings/billing?canceled=true`,
       metadata: {
