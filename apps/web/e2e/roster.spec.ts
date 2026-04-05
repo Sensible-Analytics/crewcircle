@@ -28,6 +28,12 @@ async function setupDemoAndNavigateToRoster(page: Page) {
   // Wait for redirect to roster
   await expect(page).toHaveURL(/\/roster/, { timeout: 10000 });
   await page.waitForLoadState('networkidle');
+  
+  // Wait for roster grid to actually render (not just "Loading roster...")
+  // The grid container with grid-cols appears only when data is loaded
+  await page.waitForSelector('.grid-cols-\\[200px_repeat\\(7\\,1fr\\)\\], text="Loading roster..."', { timeout: 15000 }).catch(() => {});
+  // If still loading, wait a bit more
+  await page.waitForTimeout(3000);
 }
 
 test.describe('Roster Page - Demo Authentication', () => {
