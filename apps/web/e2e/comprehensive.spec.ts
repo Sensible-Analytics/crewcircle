@@ -203,7 +203,12 @@ test.describe('Navigation Flows', () => {
     await captureStep(page, '00_landing_page');
     await page.click('a[href="/signup"]:first-of-type');
     await expect(page).toHaveURL(/\/signup/);
+<<<<<<< HEAD
+    await page.waitForSelector('[class*="cl-"]', { state: 'attached', timeout: 10000 });
+    await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
+=======
     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
+>>>>>>> origin/master
     await captureStep(page, '01_navigated_to_signup');
   });
 
@@ -328,12 +333,22 @@ test.describe('Accessibility', () => {
     // Clerk renders in shadow DOM - flaky visibility checks
     await page.goto('/signup');
     await captureStep(page, '00_signup_page');
+<<<<<<< HEAD
+    // Clerk renders asynchronously — wait for the form container
+    await page.waitForSelector('[class*="cl-"]', { state: 'attached', timeout: 10000 });
+    await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
+    await captureStep(page, '01_form_visible');
+  });
+
+  test('signup form submit button is accessible', async ({ page }) => {
+=======
     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
     await captureStep(page, '01_form_visible');
   });
 
   test.skip('signup form submit button is accessible', async ({ page }) => {
     // Clerk renders in shadow DOM - flaky visibility checks
+>>>>>>> origin/master
     await page.goto('/signup');
     await captureStep(page, '00_signup_page');
     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
