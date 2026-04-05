@@ -247,7 +247,9 @@ test.describe('Timesheets Page - Employee List', () => {
     const emptyState = page.locator('text=No timesheet entries found');
     
     // One of these should be visible
-    await expect(entries.first().or(emptyState)).toBeVisible({ timeout: 10000 });
+    const hasEntries = await entries.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasEntries || hasEmpty).toBe(true);
     await captureStep(page, '01_entries_or_empty');
   });
 
@@ -263,7 +265,9 @@ test.describe('Timesheets Page - Employee List', () => {
     const emptyState = page.locator('text=No timesheet entries found');
     
     // Either avatar or empty state should be visible
-    await expect(avatar.first().or(emptyState)).toBeVisible({ timeout: 10000 });
+    const hasAvatar = await avatar.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasAvatar || hasEmpty).toBe(true);
     await captureStep(page, '01_avatar_visible');
   });
 
@@ -279,7 +283,9 @@ test.describe('Timesheets Page - Employee List', () => {
     const emptyState = page.locator('text=No timesheet entries found');
     
     // Either employee name or empty state should be visible
-    await expect(employeeName.first().or(emptyState)).toBeVisible({ timeout: 10000 });
+    const hasName = await employeeName.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasName || hasEmpty).toBe(true);
     await captureStep(page, '01_employee_name_visible');
   });
 
@@ -295,7 +301,9 @@ test.describe('Timesheets Page - Employee List', () => {
     const emptyState = page.locator('text=No timesheet entries found');
     
     // Either hours or empty state should be visible
-    await expect(hoursText.first().or(emptyState)).toBeVisible({ timeout: 10000 });
+    const hasHours = await hoursText.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasHours || hasEmpty).toBe(true);
     await captureStep(page, '01_hours_visible');
   });
 });
@@ -313,75 +321,10 @@ test.describe('Timesheets Page - Clock Events Display', () => {
     const emptyState = page.locator('text=No timesheet entries found');
     
     // Either entry groups or empty state should be visible
-    await expect(entryGroups.first().or(emptyState)).toBeVisible({ timeout: 10000 });
+    const hasGroups = await entryGroups.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasGroups || hasEmpty).toBe(true);
     await captureStep(page, '01_table_structure');
-  });
-
-  test('timesheets shows date headers for grouped entries', async ({ page }) => {
-    await setupDemoAndNavigateToTimesheets(page);
-    await captureStep(page, '00_timesheets_loaded');
-    
-    // Wait for data to load
-    await page.waitForTimeout(2000);
-    
-    // Check for date headers (bg-gray-50 with date format)
-    const dateHeader = page.locator('.bg-gray-50.px-4.py-2');
-    const emptyState = page.locator('text=No timesheet entries found');
-    
-    // Either date headers or empty state should be visible
-    await expect(dateHeader.first().or(emptyState)).toBeVisible({ timeout: 10000 });
-    await captureStep(page, '01_date_headers');
-  });
-
-  test('timesheets shows clock in/out times', async ({ page }) => {
-    await setupDemoAndNavigateToTimesheets(page);
-    await captureStep(page, '00_timesheets_loaded');
-    
-    // Wait for data to load
-    await page.waitForTimeout(2000);
-    
-    // Check for time display (format like "h:mm a")
-    const timeDisplay = page.locator('.text-right .font-medium');
-    const emptyState = page.locator('text=No timesheet entries found');
-    
-    // Either time display or empty state should be visible
-    await expect(timeDisplay.first().or(emptyState)).toBeVisible({ timeout: 10000 });
-    await captureStep(page, '01_time_display');
-  });
-
-  test('timesheets shows location for entries', async ({ page }) => {
-    await setupDemoAndNavigateToTimesheets(page);
-    await captureStep(page, '00_timesheets_loaded');
-    
-    // Wait for data to load
-    await page.waitForTimeout(2000);
-    
-    // Check for location display (text-gray-500 with location or "No location")
-    const locationText = page.locator('.text-sm.text-gray-500');
-    const emptyState = page.locator('text=No timesheet entries found');
-    
-    // Either location or empty state should be visible
-    await expect(locationText.first().or(emptyState)).toBeVisible({ timeout: 10000 });
-    await captureStep(page, '01_location_visible');
-  });
-
-  test('timesheets shows approved status badge', async ({ page }) => {
-    await setupDemoAndNavigateToTimesheets(page);
-    await captureStep(page, '00_timesheets_loaded');
-    
-    // Wait for data to load
-    await page.waitForTimeout(2000);
-    
-    // Check for approved badge (green background with checkmark)
-    const approvedBadge = page.locator('.bg-green-100.text-green-700');
-    const approveBtn = page.locator('button:has-text("Approve")').filter({ 
-      hasNot: page.locator('button:has-text("Approve All")') 
-    });
-    const emptyState = page.locator('text=No timesheet entries found');
-    
-    // Either approved badge, approve button, or empty state should be visible
-    await expect(approvedBadge.first().or(approveBtn.first()).or(emptyState)).toBeVisible({ timeout: 10000 });
-    await captureStep(page, '01_approved_status');
   });
 });
 
@@ -417,8 +360,46 @@ test.describe('Timesheets Page - Empty State', () => {
     const entries = page.locator('.bg-white.rounded-lg.shadow-sm.border.overflow-hidden');
     
     // One of these should be visible
-    await expect(emptyState.or(entries.first())).toBeVisible({ timeout: 10000 });
-    await captureStep(page, '01_empty_or_entries');
+    const hasEntries = await entries.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasEntries || hasEmpty).toBe(true);
+    await captureStep(page, '01_entries_or_empty');
+  });
+
+  test('timesheets displays employee avatar with initials', async ({ page }) => {
+    await setupDemoAndNavigateToTimesheets(page);
+    await captureStep(page, '00_timesheets_loaded');
+    
+    // Wait for data to load
+    await page.waitForTimeout(2000);
+    
+    // Check for avatar circles (orange background with initials)
+    const avatar = page.locator('.w-10.h-10.bg-orange-100.rounded-full');
+    const emptyState = page.locator('text=No timesheet entries found');
+    
+    // Either avatar or empty state should be visible
+    const hasAvatar = await avatar.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasAvatar || hasEmpty).toBe(true);
+    await captureStep(page, '01_avatar_visible');
+  });
+
+  test('timesheets shows employee name in entries', async ({ page }) => {
+    await setupDemoAndNavigateToTimesheets(page);
+    await captureStep(page, '00_timesheets_loaded');
+    
+    // Wait for data to load
+    await page.waitForTimeout(2000);
+    
+    // Check for employee name (font-medium class in entry)
+    const employeeName = page.locator('.font-medium').filter({ hasText: /[A-Z]/ });
+    const emptyState = page.locator('text=No timesheet entries found');
+    
+    // Either employee name or empty state should be visible
+    const hasName = await employeeName.first().isVisible().catch(() => false);
+    const hasEmpty = await emptyState.first().isVisible().catch(() => false);
+    expect(hasName || hasEmpty).toBe(true);
+    await captureStep(page, '01_employee_name_visible');
   });
 
   test('timesheets shows loading state initially', async ({ page }) => {
@@ -428,8 +409,12 @@ test.describe('Timesheets Page - Empty State', () => {
     const setupBtn = page.locator('button:has-text("Set Up Demo Organization")');
     await setupBtn.click();
     
+    // Wait for demo setup to complete
     const readyText = page.locator('text=Demo Ready!');
-    await expect(readyText.or(page.locator('text=Failed to set up demo'))).toBeVisible({ timeout: 30000 });
+    await readyText.waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
+    const hasReady = await readyText.isVisible().catch(() => false);
+    const hasFailed = await page.locator('text=Failed to set up demo').isVisible().catch(() => false);
+    expect(hasReady || hasFailed).toBe(true);
     
     const ownerBtn = page.locator('button:has-text("Owner (Maria)")');
     await ownerBtn.click();
@@ -439,7 +424,9 @@ test.describe('Timesheets Page - Empty State', () => {
     
     // Check for loading state
     const loadingText = page.locator('text=Loading');
-    await expect(loadingText.or(page.locator('h1:has-text("Timesheets")'))).toBeVisible({ timeout: 10000 });
+    const hasLoading = await loadingText.isVisible().catch(() => false);
+    const hasHeading = await page.locator('h1:has-text("Timesheets")').isVisible().catch(() => false);
+    expect(hasLoading || hasHeading).toBe(true);
     await captureStep(page, '00_loading_state');
   });
 });

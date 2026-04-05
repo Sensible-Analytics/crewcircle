@@ -211,9 +211,9 @@ test.describe('Shift Creation Modal - Form Fields', () => {
     const employeeSelect = page.locator('select');
     await expect(employeeSelect).toBeVisible();
     
-    // Check for default option
+    // Check for default option — <option> elements are hidden until <select> is clicked
     const defaultOption = page.locator('option:has-text("Select an employee")');
-    await expect(defaultOption).toBeVisible();
+    await expect(defaultOption).toBeAttached();
     await captureStep(page, '02_employee_dropdown_visible');
   });
 
