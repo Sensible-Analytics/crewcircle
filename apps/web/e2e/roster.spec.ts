@@ -28,6 +28,12 @@ async function setupDemoAndNavigateToRoster(page: Page) {
   // Wait for redirect to roster
   await expect(page).toHaveURL(/\/roster/, { timeout: 10000 });
   await page.waitForLoadState('networkidle');
+  
+  // Wait for roster grid to actually render (not just "Loading roster...")
+  // The grid container with grid-cols appears only when data is loaded
+  await page.waitForSelector('.grid-cols-\\[200px_repeat\\(7\\,1fr\\)\\], text="Loading roster..."', { timeout: 15000 }).catch(() => {});
+  // If still loading, wait a bit more
+  await page.waitForTimeout(3000);
 }
 
 test.describe('Roster Page - Demo Authentication', () => {
@@ -211,9 +217,9 @@ test.describe('Shift Creation Modal - Form Fields', () => {
     const employeeSelect = page.locator('select');
     await expect(employeeSelect).toBeVisible();
     
-    // Check for default option
+    // Check for default option — <option> elements are hidden until <select> is clicked
     const defaultOption = page.locator('option:has-text("Select an employee")');
-    await expect(defaultOption).toBeVisible();
+    await expect(defaultOption).toBeAttached();
     await captureStep(page, '02_employee_dropdown_visible');
   });
 
