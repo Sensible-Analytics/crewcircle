@@ -2,59 +2,87 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, develop]
   pull_request:
-    branches: [main, master]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-permissions:
-  contents: read
+    branches: [main, develop]
 
 jobs:
-  lint-and-test:
-    runs-on: ubuntu-latest
+  build-and-test:
+    runs-on: macos-latest
     strategy:
       matrix:
-        node-version: [20.x]
+        platform: [ios, android]
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          run_install: false
-
-      - name: Get pnpm store path
-        id: pnpm-cache
-        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Cache pnpm store
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-pnpm-store-
+          node-version: "20.19.0"
+          cache: "npm"
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
-      - name: Run linter
-        run: pnpm --filter web lint
+      - name: Setup Ruby and CocoaPods (iOS only)
+        if: matrix.platform == 'ios'
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "2.7"
 
-      - name: Run type check
-        run: pnpm --filter web type-check --if-present
+      - name: Install CocoaPods (iOS only)
+        if: matrix.platform == 'ios'
+        run: |
+          cd ios
+          pod install
+          cd ..
 
-      - name: Run tests
-        run: pnpm --filter web test --if-present
+      - name: Setup Java (Android only)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
 
-      - name: Build
-        run: pnpm --filter web build
+      - name: Setup Android SDK (Android only)
+        if: matrix.platform == 'android'
+        uses: AndroidSetup@v1
+        with:
+          api-level: 34
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run TypeScript check
+        run: npm run tsc
+
+      - name: Run unit tests
+        run: npm run test:ci
+
+      - name: Build app (iOS)
+        if: matrix.platform == 'ios'
+        run: npm run detox:build:ios
+
+      - name: Build app (Android)
+        if: matrix.platform == 'android'
+        run: npm run detox:build:android
+
+      - name: Run E2E tests (iOS)
+        if: matrix.platform == 'ios'
+        run: npm run detox:test -- --configuration ios.sim
+
+      - name: Run E2E tests (Android)
+        if: matrix.platform == 'android'
+        run: npm run detox:test -- --configuration android.emu
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: |
+            ./reports/
+            ./e2e/screenshots/
+            ./coverage/
