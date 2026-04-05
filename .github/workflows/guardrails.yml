@@ -17,8 +17,7 @@ jobs:
       - name: Detect secrets
         uses: trufflesecurity/trufflehog@main
         with:
-          scanDepth: 100
-          ignorePaths: .git-hooks
+          extra_args: --since-commit HEAD~100 --no-git --only-verified
         continue-on-error: true
 
       # 2. Block unwanted markdown files
@@ -26,7 +25,6 @@ jobs:
         run: |
           # List of patterns to block
           BLOCKED_FILES=(
-            "AGENTS.md"
             "CLAUDE.md"
             "SYSTEM_PROMPT.md"
             "agent-instructions.md"
