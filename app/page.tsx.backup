@@ -1,0 +1,886 @@
+"use client"
+
+import { useState } from "react"
+import Link from "next/link"
+import {
+  Github,
+  Linkedin,
+  Mail,
+  ArrowRight,
+  ExternalLink,
+  Newspaper,
+  Terminal,
+  Code2,
+  Database,
+  Cpu,
+  Layers,
+  Brain,
+  Cloud,
+  TrendingUp,
+  CheckCircle,
+  Globe,
+  Building2,
+  Briefcase,
+  BarChart3,
+  Calendar,
+} from "lucide-react"
+import { CalendlyModal } from "@/components/calendly-modal"
+import { CalendlyInline } from "@/components/calendly-inline"
+import { OpenSourceTabs } from "@/components/open-source-tabs"
+
+const CALENDLY_URL = "https://calendly.com/sensible-analytic/30min"
+
+const navItems = [
+  { label: "Services", href: "#services" },
+  { label: "Track Record", href: "#track-record" },
+  { label: "Open Source", href: "#open-source" },
+  { label: "About", href: "#about" },
+  { label: "Contact", href: "#contact" },
+]
+
+const socials = [
+  {
+    Icon: Linkedin,
+    href: "https://www.linkedin.com/in/prabhatr/",
+    label: "LinkedIn",
+  },
+  {
+    Icon: Github,
+    href: "https://github.com/rprabhat",
+    label: "GitHub",
+  },
+  {
+    Icon: Newspaper,
+    href: "https://prabhatranjan.substack.com",
+    label: "Substack",
+  },
+]
+
+const services = [
+  {
+    title: "AI & Data Analytics",
+    description:
+      "Design and implement AI-powered analytics solutions for healthcare and financial services, including predictive patient outcomes, EHR optimization, and regulatory reporting automation.",
+    points: [
+      "Predictive analytics for patient risk stratification",
+      "Natural language interfaces over complex datasets",
+      "ML pipelines for fraud detection and claims analysis",
+      "Explainable AI with full audit trails for compliance",
+    ],
+    tags: ["Healthcare AI", "FinTech", "ML Ops", "NLP"],
+    icon: Brain,
+  },
+  {
+    title: "Platform Modernisation",
+    description:
+      "Transform legacy healthcare and financial systems to cloud-native architectures with improved security, compliance, and scalability.",
+    points: [
+      "Legacy EHR/EMR migration to secure cloud platforms",
+      "Data warehouse modernization (Snowflake, Redshift, BigQuery)",
+      "API-first architecture for healthcare data (FHIR, HL7)",
+      "Performance optimization for real-time analytics",
+    ],
+    tags: ["Healthcare IT", "FinTech", "Cloud Migration", "DevOps"],
+    icon: Cloud,
+  },
+  {
+    title: "Fractional CTO",
+    description:
+      "Strategic technology leadership for organisations navigating digital transformation, regulatory compliance, and technology modernisation.",
+    points: [
+      "Technology strategy and roadmap development",
+      "Regulatory compliance (HIPAA, GDPR, SOC 2)",
+      "Architecture review and vendor selection",
+      "Engineering team building and process optimization",
+    ],
+    tags: ["Strategy", "Leadership", "Compliance", "Governance"],
+    icon: Layers,
+  },
+]
+
+const caseStudies = [
+    {
+      title: "Healthcare Analytics Platform Modernization",
+      description:
+        "Transformed a consultancy-based healthcare analytics platform into a global SaaS provider, growing subscription revenue from 56% to 83% while reducing infrastructure costs by 76%.",
+      metrics: [
+        { value: "83%", label: "Subscription Revenue" },
+        { value: "3x", label: "Client Capacity" },
+        { value: "76%", label: "Cost Reduction" },
+      ],
+    },
+    {
+      title: "Financial Services Analytics Platform",
+      description:
+        "Led $30M investor analytics platform modernization for JPMorgan serving 400+ global funds. Zero operational disruptions during migration.",
+      metrics: [
+        { value: "400+", label: "Global Funds" },
+        { value: "7", label: "New ESG Clients" },
+        { value: "0%", label: "Downtime" },
+],
+    },
+    {
+        name: "Commercial Apps",
+        icon: Briefcase,
+        color: "text-red-400",
+        projects: [
+            {
+                name: "CardScanner",
+                description: "Advanced document scanning and OCR solution for expense tracking and receipt digitization.",
+                language: "TypeScript",
+                languageColor: "text-blue-400",
+                url: "https://github.com/Sensible-Analytics/card-scanner",
+                demo: "#",
+                hasDemo: true,
+                logo: "/logos/cardscanner-logo.png",
+                featured: false,
+            },
+            {
+                name: "CrewCircle",
+                description: "Team collaboration and scheduling platform for construction and field service teams.",
+                language: "TypeScript", 
+                languageColor: "text-green-400",
+                url: "https://github.com/Sensible-Analytics/crew-circle",
+                demo: "#",
+                hasDemo: true,
+                logo: "/logos/crewcircle-logo.png",
+                featured: false,
+            },
+        ]
+    },
+];
+    
+const credentials = [
+  { icon: Database, text: "20+ Years in Data Platforms" },
+  { icon: CheckCircle, text: "IIT-BHU Alumnus" },
+  { icon: TrendingUp, text: "Ex-Canvas, JPMorgan, MSCI, BNP Paribas" },
+  { icon: Code2, text: "Apache Ignite Contributor" },
+];
+
+const openSourceCategories = [
+  {
+    name: "Real Estate",
+    icon: Building2,
+    color: "text-blue-400",
+    projects: [
+        {
+            name: "PropRoo",
+            description: "Smart Aussie-flavoured real estate analytics engine for market data, rental insights, and investment metrics.",
+            language: "TypeScript",
+            languageColor: "text-yellow-400",
+            url: "https://github.com/Sensible-Analytics/PropRoo",
+            demo: "https://proproo.sensibleanalytics.co",
+            hasDemo: true,
+            logo: "/logos/proproo-logo.png",
+            featured: true,
+        },
+        {
+            name: "Rentroo",
+            description: "Open source real estate management system helping landlords manage rentals and properties.",
+            language: "JavaScript",
+            languageColor: "text-yellow-300",
+            url: "https://github.com/Sensible-Analytics/rentral-app",
+            demo: "https://rentral-app.sensibleanalytics.co",
+            hasDemo: true,
+            logo: "/logos/rental-app-logo.png",
+            featured: false,
+        },
+    ],
+  },
+  {
+    name: "Finance & Trading",
+    icon: BarChart3,
+    color: "text-green-400",
+    projects: [
+        {
+            name: "Folio",
+            description: "Portfolio tracking with Australian bank statement downloader integration.",
+            language: "TypeScript",
+            languageColor: "text-blue-400",
+            url: "https://github.com/Sensible-Analytics/folio",
+            demo: "https://wealthfolio.sensibleanalytics.co",
+            hasDemo: true,
+            logo: "/logos/wealthfolio-logo.png",
+            featured: false,
+        },
+        {
+            name: "Qullamaggie Scanner",
+            description: "Swing trading decision station with IBKR TWS integration for market analysis.",
+            language: "HTML",
+            languageColor: "text-orange-400",
+            url: "https://github.com/Sensible-Analytics/qullamaggie_scanner",
+            demo: "https://qullamaggie.sensibleanalytics.co/",
+            hasDemo: true,
+            logo: "/logos/qullamaggie-logo.png",
+            featured: false,
+        },
+    ],
+  },
+  {
+    name: "Data & AI",
+    icon: Briefcase,
+    color: "text-purple-400",
+    projects: [
+        {
+            name: "Video Analysis",
+            description: "Video analysis pipeline with Split-Helix UI for multimedia processing.",
+            language: "Python",
+            languageColor: "text-green-400",
+            url: "https://github.com/Sensible-Analytics/video_analysis",
+            demo: "https://video-analysis.sensibleanalytics.co",
+            hasDemo: true,
+            logo: "/logos/video-analysis-logo.png",
+            featured: false,
+        },
+    ],
+  },
+  {
+    name: "Commercial Apps",
+    icon: Briefcase,
+    color: "text-red-400",
+    projects: [
+        {
+            name: "CardScanner",
+            description: "Advanced document scanning and OCR solution for expense tracking and receipt digitization.",
+            language: "TypeScript",
+            languageColor: "text-blue-400",
+            url: "https://github.com/Sensible-Analytics/card-scanner",
+            demo: "#",
+            hasDemo: true,
+            logo: "/logos/cardscanner-logo.png",
+            featured: false,
+            },
+            {
+                name: "CrewCircle",
+                description: "Team collaboration and scheduling platform for construction and field service teams.",
+                language: "TypeScript", 
+                languageColor: "text-green-400",
+                url: "https://github.com/Sensible-Analytics/crew-circle",
+                demo: "#",
+                hasDemo: true,
+                logo: "/logos/crewcircle-logo.png",
+                featured: false,
+            },
+        ]
+    },
+  ]
+];
+
+const openSourceCategories = [
+  { icon: Database, text: "20+ Years in Data Platforms" },
+  { icon: CheckCircle, text: "IIT-BHU Alumnus" },
+  { icon: TrendingUp, text: "Ex-Canvas, JPMorgan, MSCI, BNP Paribas" },
+  { icon: Code2, text: "Apache Ignite Contributor" },
+];
+
+const openSourceCategories = [
+  { icon: Database, text: "20+ Years in Data Platforms" },
+  { icon: CheckCircle, text: "IIT-BHU Alumnus" },
+  { icon: TrendingUp, text: "Ex-Canvas, JPMorgan, MSCI, BNP Paribas" },
+  { icon: Code2, text: "Apache Ignite Contributor" },
+];
+
+const openSourceCategories = [
+
+const openSourceCategories = [
+  {
+    name: "Real Estate",
+    icon: Building2,
+    color: "text-blue-400",
+    projects: [
+      {
+        name: "PropRoo",
+        description: "Smart Aussie-flavoured real estate analytics engine for market data, rental insights, and investment metrics.",
+        language: "TypeScript",
+        languageColor: "text-yellow-400",
+        url: "https://github.com/Sensible-Analytics/PropRoo",
+        demo: "https://proproo.sensibleanalytics.co",
+        hasDemo: true,
+        logo: "/logos/proproo-logo.png",
+        featured: true,
+      },
+      {
+        name: "Rentroo",
+        description: "Open source real estate management system helping landlords manage rentals and properties.",
+        language: "JavaScript",
+        languageColor: "text-yellow-300",
+        url: "https://github.com/Sensible-Analytics/rental-app",
+        demo: "https://rental-app.sensibleanalytics.co",
+        hasDemo: true,
+        logo: "/logos/rental-app-logo.png",
+        featured: false,
+      },
+    ],
+  },
+  {
+    name: "Finance & Trading",
+    icon: BarChart3,
+    color: "text-green-400",
+    projects: [
+      {
+        name: "Folio",
+        description: "Portfolio tracking with Australian bank statement downloader integration.",
+        language: "TypeScript",
+        languageColor: "text-blue-400",
+        url: "https://github.com/Sensible-Analytics/folio",
+        demo: "https://wealthfolio.sensibleanalytics.co",
+        hasDemo: true,
+        logo: "/logos/wealthfolio-logo.png",
+        featured: false,
+      },
+      {
+        name: "Qullamaggie Scanner",
+        description: "Swing trading decision station with IBKR TWS integration for market analysis.",
+        language: "HTML",
+        languageColor: "text-orange-400",
+        url: "https://github.com/Sensible-Analytics/qullamaggie_scanner",
+        demo: "https://qullamaggie.sensibleanalytics.co/",
+        hasDemo: true,
+        logo: "/logos/qullamaggie-logo.png",
+        featured: false,
+      },
+    ],
+  },
+  {
+    name: "Data & AI",
+    icon: Briefcase,
+    color: "text-purple-400",
+    projects: [
+      {
+        name: "Video Analysis",
+        description: "Video analysis pipeline with Split-Helix UI for multimedia processing.",
+        language: "Python",
+        languageColor: "text-green-400",
+        url: "https://github.com/Sensible-Analytics/video_analysis",
+        demo: "https://video-analysis.sensibleanalytics.co",
+        hasDemo: true,
+        logo: "/logos/video-analysis-logo.png",
+        featured: false,
+      },
+],
+    },
+    {
+        name: "Commercial Apps",
+        icon: Briefcase,
+        color: "text-red-400",
+        projects: [
+            {
+                name: "CardScanner",
+                description: "Advanced document scanning and OCR solution for expense tracking and receipt digitization.",
+                language: "TypeScript",
+                languageColor: "text-blue-400",
+                url: "https://github.com/Sensible-Analytics/card-scanner",
+                demo: "#",
+                hasDemo: true,
+                logo: "/logos/cardscanner-logo.png",
+                featured: false,
+            },
+            {
+                name: "CrewCircle",
+                description: "Team collaboration and scheduling platform for construction and field service teams.",
+                language: "TypeScript", 
+                languageColor: "text-green-400",
+                url: "https://github.com/Sensible-Analytics/crew-circle",
+                demo: "#",
+                hasDemo: true,
+                logo: "/logos/crewcircle-logo.png",
+                featured: false,
+            },
+        ]
+    },
+]
+
+function SectionHeader({ label, title }: { label: string; title: string }) {
+  return (
+    <div className="section-divider mb-12">
+      <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+        {label}
+      </span>
+    </div>
+  )
+}
+
+function MetricCard({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="metric-value">{value}</div>
+      <div className="metric-label mt-1">{label}</div>
+    </div>
+  )
+}
+
+function ServiceCard({
+  service,
+}: {
+  service: (typeof services)[0]
+}) {
+  const Icon = service.icon
+  return (
+    <div className="professional-card p-8 group">
+      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
+        <Icon className="w-7 h-7 text-primary" />
+      </div>
+      <h3 className="text-xl font-semibold text-foreground mb-3">{service.title}</h3>
+      <p className="text-muted-foreground mb-6 leading-relaxed">{service.description}</p>
+      <ul className="space-y-2 mb-6">
+        {service.points.map((point) => (
+          <li
+            key={point}
+            className="text-sm text-muted-foreground flex items-start gap-2"
+          >
+            <CheckCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            {point}
+          </li>
+        ))}
+      </ul>
+      <div className="flex flex-wrap gap-2 pt-4 border-t border-border">
+        {service.tags.map((tag) => (
+          <span
+            key={tag}
+            className="text-xs font-medium px-3 py-1 rounded-full bg-muted text-muted-foreground"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TerminalProjectCard({
+  project,
+  compact = false,
+}: {
+  project: (typeof openSourceCategories)[0]["projects"][0]
+  compact?: boolean
+}) {
+  return (
+    <div className={`terminal-border terminal-glow group ${compact ? 'p-4' : 'p-5'}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={`${compact ? 'w-10 h-10' : 'w-12 h-12'} rounded-lg bg-white border border-border shadow-sm flex items-center justify-center`}>
+            <img
+              src={project.logo || `/logos/${project.name.toLowerCase()}-logo.png`}
+              alt={`${project.name} logo`}
+              className="w-full h-full object-contain rounded-lg"
+            />
+          </div>
+          <div>
+            <h3 className="font-mono font-semibold text-foreground group-hover:text-primary transition-colors">
+              {project.name}
+            </h3>
+            <span className={`text-xs font-mono ${project.languageColor}`}>
+              {project.language}
+            </span>
+          </div>
+        </div>
+        {project.hasDemo && (
+          <span className="live-badge text-[10px] font-mono px-2 py-1 rounded flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            TRY IT
+          </span>
+        )}
+      </div>
+
+      <p className={`text-muted-foreground font-mono ${compact ? 'text-xs mb-3 line-clamp-2' : 'text-sm mb-4'}`}>
+        {project.description}
+      </p>
+
+      {project.demo && (
+        <div className="mb-4 rounded-lg border border-border overflow-hidden bg-muted/30">
+          <div className="h-8 bg-secondary/50 border-b border-border flex items-center gap-2 px-3">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-400/60" />
+            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/60" />
+            <div className="w-2.5 h-2.5 rounded-full bg-green-400/60" />
+            <span className="text-xs text-muted-foreground ml-2 font-mono truncate">
+              {project.demo.replace("https://", "")}
+            </span>
+          </div>
+          <iframe
+            src={project.demo}
+            className="w-full h-64 border-0 block"
+            title={`${project.name} preview`}
+            loading="eager"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+          />
+        </div>
+      )}
+
+      <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
+        <span className="text-green-600">$</span>
+        <span>
+          npm run demo →{" "}
+          <a
+            href={project.demo || "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
+            {project.demo?.replace("https://", "")}
+          </a>
+        </span>
+      </div>
+
+      <div className="flex items-center gap-2 mt-3">
+        {project.demo && (
+          <a
+            href={project.demo}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 inline-flex items-center justify-center gap-2 bg-green-50 text-green-700 border border-green-200 px-2 py-1.5 rounded font-mono text-xs transition-all hover:bg-green-100"
+          >
+            <ExternalLink className="w-3 h-3" />
+            Open App
+          </a>
+        )}
+        <a
+          href={project.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 border border-border text-muted-foreground px-2 py-1.5 rounded font-mono text-xs transition-all hover:bg-muted hover:text-foreground"
+        >
+          <Github className="w-3 h-3" />
+          Source
+        </a>
+      </div>
+    </div>
+  )
+}
+
+export default function Home() {
+  const [isCalendlyOpen, setIsCalendlyOpen] = useState(false)
+
+  return (
+    <div className="min-h-screen bg-background">
+      <CalendlyModal 
+        url={CALENDLY_URL} 
+        isOpen={isCalendlyOpen} 
+        onClose={() => setIsCalendlyOpen(false)} 
+      />
+      <nav className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-4">
+            <img
+              src="/logo.png"
+              alt="Sensible Analytics"
+              className="h-14 w-auto"
+              style={{ height: "3.5rem", width: "auto" }}
+            />
+            <div className="hidden sm:block">
+              <span className="text-lg font-bold text-primary">Sensible</span>
+              <span className="text-lg font-light text-muted-foreground">Analytics</span>
+            </div>
+          </Link>
+
+          <div className="hidden md:flex items-center gap-8">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a
+              href="https://github.com/Sensible-Analytics"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-primary transition-colors"
+              aria-label="GitHub"
+            >
+              <Github className="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      <section className="relative py-24 lg:py-32 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
+
+        <div className="relative max-w-5xl mx-auto px-6">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-tight mb-6">
+            <span className="text-foreground">Building Reasoning Engines</span>
+            <br />
+            <span className="text-primary">for Regulated Industries</span>
+          </h1>
+
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl leading-relaxed mb-10">
+            AI architecture for healthcare, finance, and real estate. I partner with
+            organisations to build data solutions that deliver measurable business
+            outcomes.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 mb-16">
+            <button 
+              onClick={() => setIsCalendlyOpen(true)}
+              className="professional-cta-primary inline-flex items-center justify-center gap-2"
+            >
+              <Calendar className="w-4 h-4" />
+              Book a Consultation
+            </button>
+            <Link href="#services" className="professional-cta-secondary inline-flex items-center justify-center gap-2">
+              <ArrowRight className="w-4 h-4" />
+              Explore Services
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-border">
+            <MetricCard value="20+" label="Years Experience" />
+            <MetricCard value="500+" label="Open Source Contribs" />
+            <MetricCard value="100%" label="Regulatory Compliance" />
+            <MetricCard value="95%" label="Client Retention" />
+          </div>
+        </div>
+      </section>
+
+      <section id="track-record" className="py-20 border-t border-border bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6">
+          <SectionHeader label="results.impact" title="Proven Track Record" />
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {caseStudies.map((study) => (
+              <div
+                key={study.title}
+                className="professional-card p-8 border-l-4 border-l-primary"
+              >
+                <h3 className="text-xl font-semibold mb-4">{study.title}</h3>
+                <p className="text-muted-foreground mb-8 leading-relaxed">
+                  {study.description}
+                </p>
+                <div className="grid grid-cols-3 gap-4 pt-6 border-t border-border">
+                  {study.metrics.map((metric) => (
+                    <MetricCard
+                      key={metric.label}
+                      value={metric.value}
+                      label={metric.label}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="services" className="py-20 border-t border-border">
+        <div className="max-w-7xl mx-auto px-6">
+          <SectionHeader label="services.offered" title="Our Services" />
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {services.map((service) => (
+              <ServiceCard key={service.title} service={service} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="open-source" className="terminal-section py-24">
+        <div className="max-w-full mx-0 px-0">
+          <div className="px-6 mb-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Terminal className="w-5 h-5 text-green-600" />
+              <span className="font-mono text-sm text-green-600">
+                $ ls -la ./open-source-projects
+              </span>
+            </div>
+            <div className="terminal-border p-4 mb-6 max-w-7xl mx-auto">
+              <div className="font-mono text-muted-foreground space-y-2">
+                <p>// 5 Production-Ready Applications — Built by Prabhat. Try them inline!</p>
+                <p className="text-sm">
+                  <span className="text-purple-600">const</span> apps = {"{"}
+                </p>
+                <p className="pl-4">
+                  <span className="text-purple-600">Real Estate</span>: [{" "}
+                  <button onClick={() => {const tab = document.querySelector('.os-tab-button'); if(tab) { tab.scrollIntoView({behavior: 'smooth'}); (tab as HTMLButtonElement)?.click(); }}} className="text-blue-600 hover:underline text-left">PropRoo</button>,{" "}
+                  <button onClick={() => {const tabs = document.querySelectorAll('.os-tab-button'); if(tabs[0]) { tabs[0].scrollIntoView({behavior: 'smooth'}); (tabs[0] as HTMLButtonElement)?.click(); }}} className="text-blue-600 hover:underline text-left">Rentroo</button>
+                  ],<br/>
+                  <span className="text-purple-600">Finance & Trading</span>: [{" "}
+                  <button onClick={() => {const tabs = document.querySelectorAll('.os-tab-button'); if(tabs[1]) { tabs[1].scrollIntoView({behavior: 'smooth'}); (tabs[1] as HTMLButtonElement)?.click(); }}} className="text-blue-600 hover:underline text-left">Folio</button>,{" "}
+                  <button onClick={() => {const tabs = document.querySelectorAll('.os-tab-button'); if(tabs[1]) { tabs[1].scrollIntoView({behavior: 'smooth'}); (tabs[1] as HTMLButtonElement)?.click(); }}} className="text-blue-600 hover:underline text-left">Qullamaggie Scanner</button>
+                  ],<br/>
+                  <span className="text-purple-600">Data & AI</span>: [{" "}
+                  <button onClick={() => {const tabs = document.querySelectorAll('.os-tab-button'); if(tabs[2]) { tabs[2].scrollIntoView({behavior: 'smooth'}); (tabs[2] as HTMLButtonElement)?.click(); }}} className="text-blue-600 hover:underline text-left">Video Analysis</button>
+                  ]
+                </p>
+                <p><span className="text-purple-600">{"}"}</span>;</p>
+              </div>
+            </div>
+          </div>
+
+          <OpenSourceTabs categories={openSourceCategories} />
+
+          <div className="mt-12 px-6 text-center">
+            <a
+              href="https://github.com/Sensible-Analytics"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-blue-600 font-mono hover:underline"
+            >
+              <Github className="w-4 h-4" />
+              View all repositories on GitHub →
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section id="about" className="py-20 border-t border-border">
+        <div className="max-w-7xl mx-auto px-6">
+          <SectionHeader label="about.founder" title="The Engineer Behind The Work" />
+
+          <div className="grid lg:grid-cols-5 gap-12">
+            <div className="lg:col-span-2">
+              <div className="professional-card p-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0 border-2 border-border">
+                    <img
+                      src="/founder-photo.jpg"
+                      alt="Prabhat Ranjan"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold">Prabhat Ranjan</h2>
+                    <p className="text-sm text-muted-foreground">Founding Engineer & Fractional CTO</p>
+                    <p className="text-xs text-muted-foreground mt-1">Sydney, Australia</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  {credentials.map((cred, i) => {
+                    const Icon = cred.icon
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-center gap-3 text-sm text-muted-foreground"
+                      >
+                        <Icon className="w-4 h-4 text-primary shrink-0" />
+                        {cred.text}
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="flex gap-3 mt-6 pt-4 border-t border-border">
+                  <a
+                    href="https://www.linkedin.com/in/prabhatr/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Linkedin className="w-5 h-5" />
+                  </a>
+                  <a
+                    href="https://github.com/rprabhat"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Github className="w-5 h-5" />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-3 space-y-6">
+              <div className="professional-card p-6">
+                <h3 className="font-semibold mb-4">Expertise</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    "Healthcare Analytics & AI",
+                    "FinTech & Financial Services",
+                    "Real Estate Analytics",
+                    "Platform Architecture",
+                    "Data Engineering",
+                    "ML Ops & MLOps",
+                    "Cloud Migration",
+                    "Regulatory Compliance",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2 text-sm text-muted-foreground"
+                    >
+                      <CheckCircle className="w-4 h-4 text-primary shrink-0" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="professional-card p-6">
+                <h3 className="font-semibold mb-4">Certifications</h3>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    "Anthropic — Agent Skills, MCP Advanced",
+                    "Hugging Face — AI Agents Fundamentals",
+                    "Coursera — Data Science",
+                  ].map((cert) => (
+                    <span
+                      key={cert}
+                      className="text-xs font-medium px-3 py-1.5 rounded-full bg-muted text-muted-foreground"
+                    >
+                      {cert}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" className="py-24 border-t border-border">
+        <div className="max-w-3xl mx-auto px-6 text-center">
+          <SectionHeader label="contact.init" title="Let's Build Something" />
+
+          <p className="text-lg text-muted-foreground mb-10">
+            Ready to transform your data infrastructure? Let&apos;s discuss how we can
+            help your organisation leverage AI and data analytics.
+          </p>
+
+          <div className="professional-card p-10 mb-10">
+            <button
+              onClick={() => window.location.href = "mailto:hello@sensibleanalytics.co?subject=Inquiry from Sensible Analytics Website"}
+              className="text-2xl sm:text-3xl font-semibold text-primary hover:text-primary-light transition-colors inline-flex items-center gap-3 cursor-pointer bg-transparent border-none"
+            >
+              <Mail className="w-6 h-6" />
+              hello@sensibleanalytics.co
+            </button>
+          </div>
+
+          <div className="flex items-center justify-center gap-8">
+            {socials.map((s) => (
+              <a
+                key={s.label}
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors"
+              >
+                <s.Icon className="w-5 h-5" />
+                <span className="text-sm font-medium">{s.label}</span>
+              </a>
+            ))}
+          </div>
+
+          <p className="text-sm text-muted-foreground mt-12">
+            Based in Sydney, Australia. Working globally with clients across
+            healthcare, finance, and real estate sectors.
+          </p>
+        </div>
+      </section>
+
+      <footer className="border-t border-border py-8 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            Sensible Analytics © {new Date().getFullYear()}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            AI Architecture for Regulated Industries
+          </p>
+        </div>
+      </footer>
+    </div>
+  )
+}
