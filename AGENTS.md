@@ -86,3 +86,11 @@ gh pr merge --squash --delete-branch
 # Back to main
 git checkout main && git pull
 ```
+
+---
+
+## 📄 Governance Documents
+
+- [Code of Conduct](docs/CODE_OF_CONDUCT.md)
+- [Privacy Policy](docs/PRIVACY_POLICY.md)
+- [Security Policy](docs/SECURITY.md)
