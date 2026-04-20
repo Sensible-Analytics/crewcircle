@@ -40,7 +40,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@playwright/test": "^1.59.1",
-    "@tanstack/react-virtual": "^3.13.23",
+    "@tanstack/react-virtual": "^3.13.24",
     "date-fns": "^4.1.0",
     "immer": "^11.1.4",
     "stripe": "^20.4.1",
@@ -48,7 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "next": "16.2.2",
+    "next": "16.2.4",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"
   },
