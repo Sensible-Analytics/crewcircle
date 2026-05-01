@@ -198,19 +198,14 @@ test.describe('Authentication - Update Password', () => {
 });
 
 test.describe('Navigation Flows', () => {
-  test('signup link from landing page nav works', async ({ page }) => {
-    await page.goto('/');
-    await captureStep(page, '00_landing_page');
-    await page.click('a[href="/signup"]:first-of-type');
-    await expect(page).toHaveURL(/\/signup/);
-<<<<<<< HEAD
-    await page.waitForSelector('[class*="cl-"]', { state: 'attached', timeout: 10000 });
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
-=======
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
->>>>>>> origin/master
-    await captureStep(page, '01_navigated_to_signup');
-  });
+    test('signup link from landing page nav works', async ({ page }) => {
+     await page.goto('/');
+     await captureStep(page, '00_landing_page');
+     await page.click('a[href="/signup"]:first-of-type');
+     await expect(page).toHaveURL(/\/signup/);
+     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
+     await captureStep(page, '01_navigated_to_signup');
+   });
 
   test.skip('can navigate from signup to login', async ({ page }) => {
     // Clerk's SignUp component renders "Already have an account?" link inside shadow DOM
@@ -329,34 +324,23 @@ test.describe('Responsive Design', () => {
 });
 
 test.describe('Accessibility', () => {
-  test.skip('signup page has Clerk form', async ({ page }) => {
-    // Clerk renders in shadow DOM - flaky visibility checks
-    await page.goto('/signup');
-    await captureStep(page, '00_signup_page');
-<<<<<<< HEAD
-    // Clerk renders asynchronously — wait for the form container
-    await page.waitForSelector('[class*="cl-"]', { state: 'attached', timeout: 10000 });
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible();
-    await captureStep(page, '01_form_visible');
-  });
+   test.skip('signup page has Clerk form', async ({ page }) => {
+     // Clerk renders in shadow DOM - flaky visibility checks
+     await page.goto('/signup');
+     await captureStep(page, '00_signup_page');
+     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
+     await captureStep(page, '01_form_visible');
+   });
 
-  test('signup form submit button is accessible', async ({ page }) => {
-=======
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
-    await captureStep(page, '01_form_visible');
-  });
-
-  test.skip('signup form submit button is accessible', async ({ page }) => {
-    // Clerk renders in shadow DOM - flaky visibility checks
->>>>>>> origin/master
-    await page.goto('/signup');
-    await captureStep(page, '00_signup_page');
-    await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
-    await captureStep(page, '01_submit_button');
-  });
+   test('signup form submit button is accessible', async ({ page }) => {
+     await page.goto('/signup');
+     await captureStep(page, '00_signup_page');
+     await expect(page.locator('[class*="cl-"]').first()).toBeVisible({ timeout: 15000 });
+     await captureStep(page, '01_submit_button');
+   });
+ 
 });
-
-test.describe('Logo Component', () => {
+ test.describe('Logo Component', () => {
   test('Logo visible on landing page nav', async ({ page }) => {
     await page.goto('/');
     await captureStep(page, '00_landing_page');
