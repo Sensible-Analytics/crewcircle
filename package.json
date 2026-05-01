@@ -43,7 +43,7 @@
     "@tanstack/react-virtual": "^3.13.24",
     "date-fns": "^4.1.0",
     "immer": "^11.1.4",
-    "stripe": "^20.4.1",
+    "stripe": "^22.1.0",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
