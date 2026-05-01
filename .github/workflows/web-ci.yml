@@ -3,20 +3,8 @@ name: Web CI
 on:
   push:
     branches: [master, main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
   pull_request:
     branches: [master, main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'pnpm-workspace.yaml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
 
 jobs:
   build-and-test:
