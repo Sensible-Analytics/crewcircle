@@ -17,7 +17,7 @@
   "license": "ISC",
   "description": "Zod validation schemas for CrewCircle",
   "dependencies": {
-    "zod": "^4.4.1"
+    "zod": "^4.4.2"
   },
   "devDependencies": {
     "typescript": "^6.0.3",
